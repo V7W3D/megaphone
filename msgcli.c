@@ -1,6 +1,12 @@
 #include "msgcli.h"
 #include <stdint.h>
 #include <stdlib.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
+#include <unistd.h>
+#include <string.h>
 
 uint16_t compose_entete(uint8_t codeReq, uint16_t id) {
     uint16_t temp = (id & 0x7FF) | (codeReq << 11);

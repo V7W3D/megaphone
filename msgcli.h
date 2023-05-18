@@ -21,4 +21,10 @@ typedef struct {
     char pseudo[10];
 } msg_inscri;
 
+
+uint16_t compose_entete(uint8_t codeReq, uint16_t id);
+void extract_entete(uint16_t e, uint8_t* codeReq, uint16_t* id);
+msg_inscri * compose_msg_inscri(uint16_t entete, const char * pseudo);
+msg_fil * compose_msg_fil(const char * data, uint16_t codeReq, uint16_t id, uint16_t numfil, uint16_t nb);
+
 #endif

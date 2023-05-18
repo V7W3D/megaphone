@@ -41,17 +41,13 @@ void* handler(void* arg) {
             break;
         }
 
-        // Traitement du message reçu
-        //printf("Message reçu du client [%s]: %s\n", inet_ntoa(addr.sin6_addr), buffer);
+        uint16_t e = *((uint16_t*)buffer);
+        uint8_t codeReq = 0;
+        uint16_t id = 0;
+        extract_entete(e, &codeReq, &id);
 
-        // Répondre au client si nécessaire
-        // ...
-
-        // Si le message est une commande de déconnexion, terminer la boucle et fermer la connexion
-        // ...
-
-        // Autres traitements en fonction du protocole
-        // ...
+        printf("code : %d id : %d \n", codeReq, id);
+        
     }
 
     free(arg);  // Libération de la mémoire
@@ -94,6 +90,16 @@ int main(){
             perror("Erreur lors de la réception du message");
             continue;
         }
+
+        /*
+        
+        uint16_t e = *((uint16_t*)buffer);
+        uint8_t codeReq = 0;
+        uint16_t id = 0;
+        extract_entete(e, &codeReq, &id);
+
+        printf("code : %d id : %d \n", codeReq, id);
+        */
 
         // Vérifier si le nombre maximal de clients est atteint
         if (nbclients >= MAX_CLIENTS) {
