@@ -5,7 +5,7 @@
 #include <unistd.h>
 #include <string.h>
 #include "user.h"
-#include "msg.h"
+#include "msgcli.h"
 
 #define BUF_SIZE 256
 
