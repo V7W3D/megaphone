@@ -2,18 +2,14 @@
 #define USER_H
 #include <arpa/inet.h>
 
-typedef struct {
+typedef struct user {
     int id;
     char pseudo[15];
+    struct user * next;
 } user;
 
-struct list_users {
-    user * u;
-    struct list_users * suiv;
-};
+typedef user * lusers;
 
-typedef struct list_users * lusers;
-
-lusers add_user(lusers head, user * new_user);
+lusers add_user(lusers head, int id, const char * pseudo);
 
 #endif
