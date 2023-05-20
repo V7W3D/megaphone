@@ -17,6 +17,18 @@ msg_fil* compose_msg_dernier_n_billets(uint16_t id, uint16_t f, uint16_t nb){
     return compose_msg_fil(NULL, 3, id, f, nb);
 }
 
+int erreur(uint16_t entete){
+    uint8_t codeReq;
+    uint16_t id;
+    extract_entete(entete, &codeReq, &id);
+    
+    if (codeReq==31){
+        fprintf(stderr, "\nErreur du serveur\n");
+        return 1;//oui il y'a une erreur
+    }
+    return 0;
+}
+
 void recv_dernier_n_billets(int nb){
     while (nb){
         char recv_buffer[sizeof(msg_dernier_billets)];
@@ -62,6 +74,8 @@ void dernier_n_billets(uint16_t id, uint16_t f, uint16_t nb){
 
     msg_srv *rep_srv = malloc(sizeof(msg_srv));
     memcpy(rep_srv, recv_buffer, sizeof(msg_srv));
+
+    if (erreur(rep_srv->entete)) return;
 
     uint16_t nb = rep_srv->nb;
 

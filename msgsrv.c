@@ -7,6 +7,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <string.h>
+#include "msgcli.h"
 
 msg_srv * compose_msg_srv(uint16_t entete, uint16_t numfil, uint16_t nb){
     msg_srv * m = malloc(sizeof(msg_srv));
@@ -27,4 +28,12 @@ msg_dernier_billets * compose_msg_dernier_billet(uint16_t numfil
     strcpy(msg->data, data);
 
     return msg;
+}
+
+msg_srv *msg_erreur(){
+    msg_srv *msg_err = malloc(sizeof(msg_srv));
+    msg_srv->entete = compose_entete(31, 0);
+    msg_srv->numfil = 0;
+    msg_srv->nb = 0;
+    return msg_err;
 }

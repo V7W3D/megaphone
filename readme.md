@@ -8,7 +8,7 @@ Projet du module Progammation réseau (PR6).
 	./serveur
 ```
 
-**Pour lancer le serveur :**
+**Pour lancer le client :**
 ```
 	make client
 	./client

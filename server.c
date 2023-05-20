@@ -24,6 +24,16 @@ void register_user(const char * pseudo){
     my_users = add_user(my_users, id_u, pseudo);
 }
 
+void envoyer_erreur(struct sockaddr_in6 adrcli){
+    char send_buffer[sizeof(msg_srv)];
+    memcpy(send_buffer, msg_erreur(), sizeof(msg_srv));
+    if (sendto(sockfd, send_buffer, sizeof(msg_srv),
+            (struct sockaddr *)&adrcli, sizeof(adrcli)) < 0){
+        perror("sendTo() => dernier_n_billets ");
+        exit(EXIT_FAILURE);
+    }
+}
+
 void envoyer_billets(int num_fil, int nb, struct sockaddr_in6 adrcli){
     msg_dernier_billets *msg;
     fil *fil;
@@ -63,7 +73,7 @@ int dernier_n_billets(const char *buffer, uint16_t id,
     msg_fil *mf = malloc(sizeof(msg_fil));
     memcpy(mf, buffer, sizeof(msg_fil));
     if (!est_inscrit(lusers, id)){
-        //envoi du msg d'erreur au client
+        envoyer_erreur();
         return -1;
     }
     msg_srv *reponse_srv = malloc(sizeof(msg_srv));
@@ -72,7 +82,7 @@ int dernier_n_billets(const char *buffer, uint16_t id,
     if (mf->numfil > 0){
         int nb_msgs_fil = nb_msgs_fil(mes_fils, mf->numfil);
         if (nb_msgs_fil < 0){
-            //envoi du msg d'erreur au client
+            envoyer_erreur();
             return -1;
         }
         reponse_srv->numfil = mf->numfil;
