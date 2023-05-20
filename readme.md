@@ -1,6 +1,15 @@
-To run server : 
+# Projet Réseau
+
+Projet du module Progammation réseau (PR6).
+
+**Pour lancer le serveur :**
+```
 	make serveur
 	./serveur
-To run client :
+```
+
+**Pour lancer le serveur :**
+```
 	make client
 	./client
+```
