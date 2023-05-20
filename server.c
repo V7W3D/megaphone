@@ -24,10 +24,42 @@ void register_user(const char * pseudo){
     my_users = add_user(my_users, id_u, pseudo);
 }
 
-void dernier_n_billets(const char *buffer){
+void dernier_n_billets(const char *buffer, uint16_t id,
+                                     struct sockaddr_in6 adrcli){
     msg_fil *mf = malloc(sizeof(msg_fil));
     memcpy(mf, buffer, sizeof(msg_fil));
-    fil *f = get_fil(mes_fils ,mf->numfil);
+    if (!est_inscrit(lusers, id)){
+        //envoi du msg d'erreur au client
+        return;
+    }
+    msg_srv *reponse_srv = malloc(sizeof(msg_srv));
+    reponse_srv->entete = mf->entete;
+    
+    if (mf->numfil > 0){
+        int nb_msgs_fil = nb_msgs_fil(mes_fils, mf->numfil);
+        if (nb_msgs_fil < 0){
+            //msg erreur
+            return;
+        }
+        reponse_srv->numfil = mf->numfil;
+        reponse_srv->nb = (mf->nb > nb_msgs_fil || mf->nb == 0) 
+                                    ? nb_msgs_fil : mf->nb ;
+    }
+    else{
+        reponse_srv->numfil = nb_fils(mes_fils);
+        reponse_srv->nb = nb_msgs_total_fil(mes_fils);
+    }
+
+    char send_buffer[sizeof(msg_srv)];
+    memcpy(send_buffer, reponse_srv, sizeof(send_buffer));
+
+    if (sendto(sockfd, send_buffer, sizeof(msg_srv),
+            (struct sockaddr *)&adrcli, sizeof(adrcli)) < 0){
+        perror("sendTo() => dernier_n_billets ");
+        exit(EXIT_FAILURE);
+    }
+
+    free(send_buffer);
     free(buffer);
 }
 
