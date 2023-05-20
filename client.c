@@ -9,6 +9,7 @@
 #include "msgsrv.h"
 
 #define BUF_SIZE 256
+
 int sock;
 struct sockaddr_in6 servadr;
 
@@ -16,17 +17,55 @@ msg_fil* compose_msg_dernier_n_billets(uint16_t id, uint16_t f, uint16_t nb){
     return compose_msg_fil(NULL, 3, id, f, nb);
 }
 
+void recv_dernier_n_billets(int nb){
+    while (nb){
+        char recv_buffer[sizeof(msg_dernier_billets)];
+        if (recv(sock, recv_buffer, sizeof(msg_dernier_billets)) < 0){
+            perror("recv() => recv_dernier_n_billets ");
+            exit(EXIT_FAILURE);
+        }
+
+        msg_dernier_billets *msg = malloc(sizeof(msg_dernier_billets));
+        memcpy(msg, recv_buffer, sizeof(msg_dernier_billets));
+        printf("\n------------------------------------------\n");
+        printf("Numero du fil : %d\n", msg->numfil);
+        printf("Origine : %s\n", msg->origin);
+        printf("Pseudo : %s\n", msg->pseudo);
+        printf("Taille du message : %d\n", msg->datalen);
+        printf("message : \n%s\n", msg->data);
+        printf("\n------------------------------------------\n");
+        free(msg);
+        nb--;
+    }
+}
+
 void dernier_n_billets(uint16_t id, uint16_t f, uint16_t nb){
     msg_fil *msg = compose_msg_dernier_n_billets(id, f, nb);
+
+    char send_buffer[sizeof(msg_fil)];
+    memcpy(send_buffer, msg, sizeof(msg_fil));
+
     //envoyer la requete au serveur
-    if (sendto(sock, msg, sizeof(msg_fil), 0,
+    if (sendto(sock, send_buffer, sizeof(msg_fil), 0,
                 (struct sockaddr*)&servadr, sizeof(servadr)) < 0){
         perror("sendto()");
         exit(EXIT_FAILURE);
     }
 
-    
+    char recv_buffer[sizeof(msg_srv)];
+    memset(recv_buffer, 0, sizeof(msg_srv));
 
+    if (recv(sock, recv_buffer, sizeof(msg_srv), 0) < 0){
+        perror("sendto()");
+        exit(EXIT_FAILURE);
+    }
+
+    msg_srv *rep_srv = malloc(sizeof(msg_srv));
+    memcpy(rep_srv, recv_buffer, sizeof(msg_srv));
+
+    uint16_t nb = rep_srv->nb;
+
+    recv_dernier_n_billets(nb);
 }
 
 msg_inscri * inscription(const char * pseudo){
