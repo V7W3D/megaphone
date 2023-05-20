@@ -24,6 +24,36 @@ void register_user(const char * pseudo){
     my_users = add_user(my_users, id_u, pseudo);
 }
 
+void envoyer_billets(int num_fil, int nb, struct sockaddr_in6 adrcli){
+    msg_dernier_billets *msg;
+    if (num_fil > 0){
+        fil *fil = get_fil(mes_fils, num_fil);
+        billet *billets = fil->billets;
+        while (nb && billets){
+            msg = compose_msg_dernier_billet(
+                numfil 
+                , get_name(fil->id_proprietaire)
+                , get_name(billets->id_proprietaire)
+                , strlen(billets->message)
+                ,billets->message);
+            char send_buffer[sizeof(msg_dernier_billets)];
+            memcpy(send_buffer, msg, sizeof(send_buffer));
+
+            if (sendto(sockfd, send_buffer, sizeof(msg_dernier_billets),
+                    (struct sockaddr *)&adrcli, sizeof(adrcli)) < 0){
+                perror("sendTo() => envoyer_billets ");
+                exit(EXIT_FAILURE);
+            }
+
+            billets = billets->suivant;
+            free(msg);
+            nb--;   
+        }
+    }else{
+
+    }
+}
+
 void dernier_n_billets(const char *buffer, uint16_t id,
                                      struct sockaddr_in6 adrcli){
     msg_fil *mf = malloc(sizeof(msg_fil));
@@ -59,8 +89,9 @@ void dernier_n_billets(const char *buffer, uint16_t id,
         exit(EXIT_FAILURE);
     }
 
-    free(send_buffer);
-    free(buffer);
+    envoyer_billets(reponse_srv->numfil, reponse_srv->nb, adrcli);
+
+    free(buffer);    
 }
 
 msg_srv * inscription(const char * buffer){

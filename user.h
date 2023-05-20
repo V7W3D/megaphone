@@ -12,5 +12,6 @@ typedef user * lusers;
 
 lusers add_user(lusers head, int id, const char * pseudo);
 int est_inscit(lusers head, int id);
+char *get_name(int id_user);
 
 #endif

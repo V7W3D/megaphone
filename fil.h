@@ -23,6 +23,7 @@ typedef struct fichier {
 
 typedef struct fil{
     int numero; // numéro du fil
+    int id_proprietaire;
     char * adresse; // adresse de multidifusion?
     billet * billets; // (Pile) liste des billets publiés
     fichier * fichiers; // (Pile) liste des fichiers publiés
@@ -31,7 +32,10 @@ typedef struct fil{
 } fil;
 
 fil * get_fil(fil * fils, int num_fil);
-fil * add_new_fil(fil *fils, const char *adresse, int num_fil);
+fil * add_new_fil(fil *fils,const id_proprietaire, const char *adresse, int num_fil);
 int add_new_billet(fil *fils, int num_fil, int id_proprietaire, const char * message);
+int nb_msgs_fil(fil*, int);
+int nb_fils(fil*);
+int nb_msgs_total_fil(fil*);
 
 #endif

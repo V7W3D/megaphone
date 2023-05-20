@@ -32,10 +32,11 @@ fil * get_fil(fil * fils, int num_fil){
 }
 
 //Créer un nouveau fil et l'insérer dans la liste fils, retourne NULL si le numéro du fil est déjà existant
-fil * add_new_fil(fil *fils, const char * adresse, int num_fil){
+fil * add_new_fil(fil *fils, int id_proprietaire, const char * adresse, int num_fil){
     if(get_fil(fils, num_fil) == NULL){
         fil *new_fil = malloc(sizeof(fil));
         new_fil->numero = num_fil;
+        new_fil->id_proprietaire = id_proprietaire;
         strcpy(new_fil->adresse, adresse);
         new_fil->billets = NULL;
         new_fil->fichiers = NULL;
@@ -71,7 +72,39 @@ void* notificationThread(void* arg) {
     }
 }
 
+int nb_msgs_fil(fil* fils, int num_fil){
+    fil *f = get_fil(fils, num_fil);
+    if (!f) return -1;
+    billet* billets = f->billets;
+    int nb = 0;
+    while (billets){
+        nb++;
+        billets = billets->suivant;
+    }
+    return nb;
+}
 
+int nb_fils(fil* fils){
+    int nb = 0;
+    while (fils){
+        nb++;
+        fils = fils->suivant;
+    }
+    return nb;
+}
+
+int nb_msgs_total_fil(fil* fils){
+    int nb = 0;
+    while (fils){
+        billet* billets = fils->billets;
+        while(billets){
+            nb++;
+            billets = billets->suivant;
+        }
+        fils = fils->suivant;
+    }
+    return nb;
+}
 
 /*
 int main(int argc, char const *argv[]){
