@@ -10,6 +10,17 @@
 
 #define BUF_SIZE 256
 
+msg_inscri * inscription(const char * pseudo){
+    uint16_t e = compose_entete(0,0);
+    msg_inscri * m = compose_msg_inscri(e, pseudo);
+    return m;
+}
+
+msg_fil * poster_billet(uint16_t id, uint16_t f, const char * message){
+    msg_fil * m = compose_msg_fil(message, 2, id, f, 0);
+    return m;
+}
+
 int main(){
     int sock = socket(PF_INET6, SOCK_DGRAM, 0);
     if(sock < 0) {
@@ -23,8 +34,7 @@ int main(){
     servadr.sin6_port = htons(7777);
     inet_pton(AF_INET6, "::1", &servadr.sin6_addr);
     
-    uint16_t e = compose_entete(0,0);
-    msg_inscri * m = compose_msg_inscri(e, "ahmed");
+    msg_inscri * m = inscription("ahmed");
 
     char send_buffer[sizeof(msg_inscri)];
     memcpy(send_buffer, m, sizeof(msg_inscri));
@@ -43,7 +53,7 @@ int main(){
         exit(EXIT_FAILURE);
     }
 
-    e = *((uint16_t*)recv_buffer);
+    uint16_t e = *((uint16_t*)recv_buffer);
     uint8_t codeReq = 0;
     uint16_t id = 0;
     extract_entete(e, &codeReq, &id);

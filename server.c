@@ -7,11 +7,13 @@
 #include "user.h"
 #include "msgcli.h"
 #include "msgsrv.h"
+#include "fil.h"
 
 #define BUF_SIZE 256
 #define MAX_CLIENTS 2047 //le plus grand id représentable sur 11 bits = 2^11 - 1
 
 lusers my_users = NULL;
+fil * mes_fils = NULL;
 uint16_t id_u = 0;
 int sockfd;
 
@@ -30,6 +32,12 @@ msg_srv * inscription(const char * buffer){
     id_u++;
     msg_srv * ms = compose_msg_srv(entete, 0, 0);
     return ms;
+}
+
+msg_srv * poster_billet(uint16_t id, const char * buffer){
+    msg_fil * mf = malloc(sizeof(msg_fil));
+    memcpy(mf, buffer, sizeof(msg_fil));
+    //int n = add_new_billet(mes_fils, mf->numfil, id, mf->data);
 }
 
 int main(){
@@ -75,9 +83,18 @@ int main(){
         extract_entete(e, &codeReq, &id);
 
         char send_buffer[sizeof(msg_srv)];
-        msg_srv * ms = inscription(recv_buffer);
-        memcpy(send_buffer, ms, sizeof(msg_srv));
-        ssize_t send_len = sendto(sockfd, send_buffer, sizeof(msg_srv), 0, (struct sockaddr*)&adrcli, lencli);
+        msg_srv * ms = NULL;
+        ssize_t send_len = 0; 
+
+        switch(codeReq){
+            case 0:
+                ms = inscription(recv_buffer);
+                memcpy(send_buffer, ms, sizeof(msg_srv));
+                send_len = sendto(sockfd, send_buffer, sizeof(msg_srv), 0, (struct sockaddr*)&adrcli, lencli);
+                break;
+            default:
+                break;
+        }
     }
 
     close(sockfd);

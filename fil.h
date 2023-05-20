@@ -7,7 +7,7 @@
 typedef struct billet{
     int numero; // numéro du billet
     int id_proprietaire; // id de l'auteur
-    char* message; // message du billet < 255
+    char * message; // message du billet < 255
     struct billet *suivant; // pointeur vers le billet suivant
 } billet;
 
