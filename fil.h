@@ -23,7 +23,7 @@ typedef struct fichier {
 
 typedef struct fil{
     int numero; // numéro du fil
-    char * adresse; // adresse de multidifusion?
+    struct sockaddr_in6 adresse; // adresse de multidifusion?
     billet * billets; // (Pile) liste des billets publiés
     fichier * fichiers; // (Pile) liste des fichiers publiés
     uint16_t * abonnes; // liste des personnes abonnées à ce fil

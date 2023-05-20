@@ -8,20 +8,32 @@
 #include "user.h"
 
 #define LEN_FILE 33554432 // 32 Mo
-#define LEN_MSG 255 
 
+char current_adr[INET6_ADDRSTRLEN];
 
-/* -- Fil --
-Chaque fil de discussions est constitué de:
-    - numéro du fil
-    - liste des personnes abonnées
-    - Son adresse de multidifusion (FFxx::/8 xx id du groupe)
-    - les billets (messages) publiés sur ce fil
-    - les noms des fichiers publiés sur ce fil
-    - fils suivants gauche et droite  (sous forme d'ABR)
->Taille d'un billet < 255 octets
->Taille d'un fichiers < 33.5 Mo
-*/
+void init(){
+    strncpy(current_adr, "ff02::1", INET6_ADDRSTRLEN);
+}
+
+struct sockaddr_in6 get_current_adr() {
+    struct sockaddr_in6 adresse;
+    memset(&adresse, 0, sizeof(struct sockaddr_in6));
+    adresse.sin6_family = AF_INET6;
+    inet_pton(AF_INET6, current_adr, &(adresse.sin6_addr));
+    return adresse;
+}
+
+void next_adr_multi(struct sockaddr_in6* adresseActuelle, struct sockaddr_in6* adresseSuivante) {
+    memcpy(adresseSuivante, adresseActuelle, sizeof(struct sockaddr_in6));
+    char adresseTexte[INET6_ADDRSTRLEN];
+    inet_ntop(AF_INET6, &(adresseSuivante->sin6_addr), adresseTexte, INET6_ADDRSTRLEN);
+    char* dernierGroupe = strrchr(adresseTexte, ':');
+    unsigned int dernierGroupeValeur;
+    sscanf(dernierGroupe + 1, "%x", &dernierGroupeValeur);
+    unsigned int prochainDernierGroupeValeur = dernierGroupeValeur + 1;
+    sprintf(dernierGroupe + 1, "%x", prochainDernierGroupeValeur);
+    inet_pton(AF_INET6, adresseTexte, &(adresseSuivante->sin6_addr));
+}
 
 fil * get_fil(fil * fils, int num_fil){
     while(fils != NULL){
