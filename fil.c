@@ -16,118 +16,48 @@ Chaque fil de discussions est constitué de:
     - numéro du fil
     - liste des personnes abonnées
     - Son adresse de multidifusion (FFxx::/8 xx id du groupe)
-    - les billets (messages) difusés sur ce fil
-    - les noms des fichiers difusés sur ce fil
+    - les billets (messages) publiés sur ce fil
+    - les noms des fichiers publiés sur ce fil
     - fils suivants gauche et droite  (sous forme d'ABR)
 >Taille d'un billet < 255 octets
 >Taille d'un fichiers < 33.5 Mo
 */
 
-int fil_existant(fil *fils, int num_fil){
-    fil *tmp = fils;
-    while (tmp != NULL)
-    {
-        if (tmp->numero == num_fil)
-        {
-            return 1;
-        }
-        tmp = tmp->suivant;
+fil * get_fil(fil * fils, int num_fil){
+    while(fils != NULL){
+        if(fils->numero == num_fil) return fils;
+        fils = fils->suivant;
     }
-    return 0;
+    return NULL;
 }
 
-void add_new_fil(fil *fils, char *adresse, int num_fil){
-    if(fil_existant(fils, num_fil) == 1){
-        printf("Le fil %d existe déjà\n", num_fil);
-        return;
+//Créer un nouveau fil et l'insérer dans la liste fils, retourne NULL si le numéro du fil est déjà existant
+fil * add_new_fil(fil *fils, const char * adresse, int num_fil){
+    if(get_fil(fils, num_fil) == NULL){
+        fil *new_fil = malloc(sizeof(fil));
+        new_fil->numero = num_fil;
+        strcpy(new_fil->adresse, adresse);
+        new_fil->billets = NULL;
+        new_fil->fichiers = NULL;
+        new_fil->abonnes = NULL;
+        new_fil->suivant = fils;
+        return new_fil;
     }
-    fil *new_fil = malloc(sizeof(fil));
-    new_fil->numero = num_fil;
-    new_fil->adresse = adresse;
-    new_fil->billet = NULL;
-    new_fil->fichier = NULL;
-    new_fil->abonnes = NULL;
-    new_fil->suivant = NULL;
-
-    fil *tmp = fils;
-    while (tmp != NULL)
-    {
-        if (tmp->suivant == NULL)
-        {
-            tmp->suivant = new_fil;
-            return;
-        }
-        tmp = tmp->suivant;
-    }
+    return NULL;
 }
 
-
-// Inserer une nouvelle personne dans la liste personne d'un fil
-void add_new_user(fil *fils, int num_fil, user user){
-    fil *tmp = fils;
-    while (tmp != NULL)
-    {
-        if (tmp->numero == num_fil)
-        {
-            tmp->abonnes = add_user(tmp->abonnes, &user);
-        }
-        tmp = tmp->suivant;
-    }
-}
-
-// Inserer un nouveau billet dans la liste billet
-void add_new_billet(fil *fils, int num_fil, int id_proprietaire, char *message){
+// Inserer un nouveau billet dans la liste billets d'un fil donné, retoune 0 si le biller a été ajouté 1 sinon
+int add_new_billet(fil *fils, int num_fil, int id_proprietaire, const char * message){
     billet *new_billet = malloc(sizeof(billet));
     new_billet->id_proprietaire = id_proprietaire;
-    new_billet->message = message;
-    new_billet->suivant = NULL;
-
-    fil *tmp = fils;
-    while (tmp != NULL)
-    {
-        if (tmp->numero == num_fil)
-        {
-            billet *tmp_billet = tmp->billet;
-            while (tmp_billet != NULL)
-            {
-                if (tmp_billet->suivant == NULL)
-                {
-                    tmp_billet->suivant = new_billet;
-                    return;
-                }
-                tmp_billet = tmp_billet->suivant;
-            }
-        }
-        tmp = tmp->suivant;
+    strcpy(new_billet->message, message);
+    fil * f = get_fil(fils, num_fil);
+    if(f != NULL){
+        new_billet->suivant = f->billets;
+        f->billets = new_billet;
+        return 0;
     }
-}
-
-// Inserer un nouveau fichier dans la liste fichier
-void add_new_fichier(fil *fils, int num_fil, int id_proprietaire, char *nom, char *data){
-    fichier *new_fichier = malloc(sizeof(fichier));
-    new_fichier->id_proprietaire = id_proprietaire;
-    new_fichier->nom = nom;
-    new_fichier->data = data;
-    new_fichier->suivant = NULL;
-
-    fil *tmp = fils;
-    while (tmp != NULL)
-    {
-        if (tmp->numero == num_fil)
-        {
-            fichier *tmp_fichier = tmp->fichier;
-            while (tmp_fichier != NULL)
-            {
-                if (tmp_fichier->suivant == NULL)
-                {
-                    tmp_fichier->suivant = new_fichier;
-                    return;
-                }
-                tmp_fichier = tmp_fichier->suivant;
-            }
-        }
-        tmp = tmp->suivant;
-    }
+    return 1;
 }
 
 void* notificationThread(void* arg) {
@@ -143,7 +73,7 @@ void* notificationThread(void* arg) {
 
 
 
-
+/*
 int main(int argc, char const *argv[]){
     pthread_t thread;
     if (pthread_create(&thread, NULL, notificationThread, NULL) != 0) {
@@ -159,5 +89,6 @@ int main(int argc, char const *argv[]){
 
     return 0;
 }
+*/
 
 
