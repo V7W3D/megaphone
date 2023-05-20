@@ -27,8 +27,10 @@ msg_inscri * compose_msg_inscri(uint16_t entete, const char * pseudo){
     return m;
 }
 
-msg_fil * compose_msg_fil(const char * data, uint16_t codeReq, uint16_t id, uint16_t numfil, uint16_t nb){
-    size_t data_size = strlen(data) + 1;
+msg_fil * compose_msg_fil(const char * data, uint8_t codeReq, uint16_t id, uint16_t numfil, uint16_t nb){
+    size_t data_size;
+    if (data) strlen(data) + 1;
+    else data_size = 0;
     size_t message_size = sizeof(msg_fil) + data_size;
     msg_fil * message = malloc(message_size);
     message->entete = compose_entete(codeReq, id);

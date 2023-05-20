@@ -24,6 +24,13 @@ void register_user(const char * pseudo){
     my_users = add_user(my_users, id_u, pseudo);
 }
 
+void dernier_n_billets(const char *buffer){
+    msg_fil *mf = malloc(sizeof(msg_fil));
+    memcpy(mf, buffer, sizeof(msg_fil));
+    fil *f = get_fil(mes_fils ,mf->numfil);
+    free(buffer);
+}
+
 msg_srv * inscription(const char * buffer){
     msg_inscri * mi = malloc(sizeof(msg_inscri));
     memcpy(mi, buffer, sizeof(msg_inscri));
@@ -39,6 +46,8 @@ msg_srv * poster_billet(uint16_t id, const char * buffer){
     memcpy(mf, buffer, sizeof(msg_fil));
     //int n = add_new_billet(mes_fils, mf->numfil, id, mf->data);
 }
+
+
 
 int main(){
 
