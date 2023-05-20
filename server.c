@@ -15,13 +15,19 @@
 lusers my_users = NULL;
 fil * mes_fils = NULL;
 uint16_t id_u = 0;
-int sockfd;
+int f = 0; //id des fils, s'incrémente à chaque ajout d'un nouvel fil
 
 void register_user(const char * pseudo){
     user * u = malloc(sizeof(user));
     u->id = id_u;
     strcpy(u->pseudo, pseudo);
     my_users = add_user(my_users, id_u, pseudo);
+}
+
+msg_srv * erreur(){
+    uint16_t entete = compose_entete(31, 0);
+    msg_srv * ms = compose_msg_srv(entete, 0, 0);
+    return ms; 
 }
 
 msg_srv * inscription(const char * buffer){
@@ -37,7 +43,15 @@ msg_srv * inscription(const char * buffer){
 msg_srv * poster_billet(uint16_t id, const char * buffer){
     msg_fil * mf = malloc(sizeof(msg_fil));
     memcpy(mf, buffer, sizeof(msg_fil));
-    //int n = add_new_billet(mes_fils, mf->numfil, id, mf->data);
+    char data_buf[mf->datalen];
+    memcpy(data_buf, mf->data, mf->datalen);
+    int n = add_new_billet(mes_fils, &f, mf->numfil, id, mf->data);
+    if(n < 0){
+        return erreur();
+    }
+    uint16_t entete = mf->entete;
+    msg_srv * ms = compose_msg_srv(entete, mf->numfil, 0);
+    return ms;
 }
 
 int main(){
@@ -87,11 +101,15 @@ int main(){
         ssize_t send_len = 0; 
 
         switch(codeReq){
-            case 0:
+            case 1:
                 ms = inscription(recv_buffer);
                 memcpy(send_buffer, ms, sizeof(msg_srv));
                 send_len = sendto(sockfd, send_buffer, sizeof(msg_srv), 0, (struct sockaddr*)&adrcli, lencli);
                 break;
+            case 2:
+                ms = poster_billet(id, recv_buffer);
+                memecpy(send_buffer, ms, sizeof(msg_srv));
+                send_len = sendto(sockfd, send_buffer, sizeof(msg_srv), 0, (struct sockaddr*)&adrcli, lencli);
             default:
                 break;
         }

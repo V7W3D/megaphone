@@ -31,7 +31,7 @@ typedef struct fil{
 } fil;
 
 fil * get_fil(fil * fils, int num_fil);
-fil * add_new_fil(fil *fils, const char *adresse, int num_fil);
-int add_new_billet(fil *fils, int num_fil, int id_proprietaire, const char * message);
+fil * add_new_fil(fil *fils, int num_fil);
+int add_new_billet(fil *fils, int * f, int num_fil, int id_proprietaire, const char * message);
 
 #endif

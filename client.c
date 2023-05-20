@@ -33,6 +33,8 @@ int main(){
     servadr.sin6_family = AF_INET6;
     servadr.sin6_port = htons(7777);
     inet_pton(AF_INET6, "::1", &servadr.sin6_addr);
+
+    
     
     msg_inscri * m = inscription("ahmed");
 
