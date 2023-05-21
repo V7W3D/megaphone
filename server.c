@@ -8,15 +8,15 @@
 #include "msgcli.h"
 #include "msgsrv.h"
 #include "fil.h"
+#include <net/if.h>
+
 
 #define BUF_SIZE 256
 #define MAX_CLIENTS 2047 //le plus grand id représentable sur 11 bits = 2^11 - 1
 
 lusers my_users = NULL;
 fil * mes_fils = NULL;
-uint16_t id_u = 0;
-int port_multi = 4444;
-int f = 0; //id des fils, s'incrémente à chaque ajout d'un nouvel fil
+uint16_t id_u = 199;
 
 void * envoyer_notification(void* arg) {
     thread_arg * a = (thread_arg *) arg;
@@ -29,7 +29,7 @@ void * envoyer_notification(void* arg) {
     char buf[10] = "hello";
     while (1) {
         sleep(10);
-        sento(sock, buf, strlen(buf), 0, (struct sockaddr*)&grsock, sizeof(grsock));
+        sendto(sock, buf, strlen(buf), 0, (struct sockaddr*)&grsock, sizeof(grsock));
     }
 }
 
@@ -61,34 +61,31 @@ msg_srv * poster_billet(uint16_t id, const char * buffer){
     memcpy(mf, buffer, sizeof(msg_fil));
     char data_buf[mf->datalen];
     memcpy(data_buf, mf->data, mf->datalen);
-    int n = add_new_billet(mes_fils, mf->numfil, id, mf->data);
+    int n = add_new_billet(mes_fils, mf->numfil, id, data_buf);
     if(n < 0){
         return erreur();
     }
-    uint16_t entete = mf->entete;
-    msg_srv * ms = NULL;
     if(mf->numfil == 0){
         pthread_t thread;
         thread_arg * a = malloc(sizeof(thread_arg));
-        a->port = port_multi;
+        a->port = mes_fils->port;
         a->adr = mes_fils->adresse;
         pthread_create(&thread, NULL, envoyer_notification, &a);
-        ms = compose_msg_srv(entete, n, port_multi);
-        port_multi++;
     }
-    else ms = compose_msg_srv(entete, n, port_multi);
+    uint16_t entete = mf->entete;
+    msg_srv * ms = compose_msg_srv(entete, n, 0);
     return ms;
 }
 
-msg_srv * abonnement(uint16_t id, const char * buffer){
+msg_srv_fil * abonnement(uint16_t id, const char * buffer){
     msg_fil * mf = malloc(sizeof(msg_fil));
     memcpy(mf, buffer, sizeof(msg_fil));
     char * adr = add_new_abonne(mes_fils, mf->numfil, id);
     if(adr != NULL){
-        return erreur();
+        return NULL;
     }
     uint16_t entete = mf->entete;
-    msg_srv * ms = compose_msg_srv_fil(entete, mf->numfil, 7777, adr);
+    msg_srv_fil * ms = compose_msg_srv_fil(entete, mf->numfil, 7777, adr);
     return ms;
 }
 
@@ -142,6 +139,7 @@ int main(){
 
         char send_buffer[sizeof(msg_srv)];
         msg_srv * ms = NULL;
+        msg_srv_fil * ms_a = NULL;
         ssize_t send_len = 0; 
 
         switch(codeReq){
@@ -152,11 +150,13 @@ int main(){
                 break;
             case 2:
                 ms = poster_billet(id, recv_buffer);
-                memecpy(send_buffer, ms, sizeof(msg_srv));
+                memcpy(send_buffer, ms, sizeof(msg_srv));
                 send_len = sendto(sockfd, send_buffer, sizeof(msg_srv), 0, (struct sockaddr*)&adrcli, lencli);
             case 4:
-                ms = abonnement(id, recv_buffer);
-                memecpy(send_buffer, ms, sizeof(msg_srv));
+                ms_a = abonnement(id, recv_buffer);
+                if(ms_a != NULL)
+                    memcpy(send_buffer, ms_a, sizeof(msg_srv_fil));
+                else memcpy(send_buffer, erreur(), sizeof(msg_srv));
                 send_len = sendto(sockfd, send_buffer, sizeof(msg_srv), 0, (struct sockaddr*)&adrcli, lencli);
             default:
                 break;

@@ -13,7 +13,7 @@ typedef struct{
     uint16_t entete;
     uint16_t numfil;
     uint16_t nb;
-    uint8_t adr[16];
+    char adr[16];
 } msg_srv_fil;
 
 typedef struct{

@@ -11,6 +11,7 @@
 
 extern char current_adr[INET6_ADDRSTRLEN];
 extern int f;
+extern int port_multi;
 
 typedef struct billet{
     int numero; // numéro du billet
@@ -31,10 +32,11 @@ typedef struct fichier {
 
 typedef struct fil{
     int numero; // numéro du fil
-    char * adresse; // adresse de multidifusion?
+    char * adresse; // adresse de multidiffusion?
+    int port; //port de multidiffusion
     billet * billets; // (Pile) liste des billets publiés
     fichier * fichiers; // (Pile) liste des fichiers publiés
-    lusers * abonnes; // liste des personnes abonnées à ce fil
+    lusers abonnes; // liste des personnes abonnées à ce fil
     struct fil * suivant; // pointeur vers le fil suivant
 } fil;
 

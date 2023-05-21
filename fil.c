@@ -11,6 +11,7 @@
 
 char current_adr[INET6_ADDRSTRLEN] = "ff02::1";
 int f = 0;
+int port_multi = 4444;
 
 void next_adr_multi() {
     char* dernierGroupe = strrchr(current_adr, ':');
@@ -37,6 +38,8 @@ fil * add_new_fil(fil *fils, int num_fil){
         new_fil->fichiers = NULL;
         new_fil->abonnes = NULL;
         new_fil->suivant = fils;
+        new_fil->port = port_multi;
+        port_multi++;
         new_fil->adresse = malloc(INET6_ADDRSTRLEN * sizeof(char));
         strcpy(new_fil->adresse, current_adr);
         next_adr_multi();

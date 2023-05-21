@@ -8,6 +8,7 @@
 #include "user.h"
 #include "msgcli.h"
 #include "msgsrv.h"
+#include <net/if.h>
 
 #define BUF_SIZE 256
 
@@ -39,12 +40,12 @@ void* recevoir_notification(void* arg){
     while(1){
         if (read(sockfd, buf, BUF_SIZE) < 0)
             perror("erreur read");
-        print("%s\n", buf);
+        printf("%s\n", buf);
     }
 }
 
 msg_inscri * inscription(const char * pseudo){
-    uint16_t e = compose_entete(0,0);
+    uint16_t e = compose_entete(1,0);
     msg_inscri * m = compose_msg_inscri(e, pseudo);
     return m;
 }
@@ -65,7 +66,7 @@ void sabonner(const char * buffer){
     char data_buf[16];
     memcpy(data_buf, mf->adr, 16);
     thread_arg * a = malloc(sizeof(thread_arg));
-    a->adr = mf->adr;
+    strcpy(a->adr, mf->adr);
     a->port = mf->nb;
     pthread_t thread;
     pthread_create(&thread, NULL, recevoir_notification, &a);
