@@ -8,12 +8,11 @@
 #include "msgcli.h"
 #include "msgsrv.h"
 
-#define BUF_SIZE 256
-
 int sock;
+uint16_t id;
 struct sockaddr_in6 servadr;
 
-msg_fil* compose_msg_dernier_n_billets(uint16_t id, uint16_t f, uint16_t nb){
+msg_fil* compose_msg_dernier_n_billets(uint16_t f, uint16_t nb){
     return compose_msg_fil(NULL, 3, id, f, nb);
 }
 
@@ -31,7 +30,9 @@ int erreur(uint16_t entete){
 
 void recv_dernier_n_billets(int nb){
     while (nb){
+
         char recv_buffer[sizeof(msg_dernier_billets)];
+
         if (recv(sock, recv_buffer, sizeof(msg_dernier_billets), 0) < 0){
             perror("recv() => recv_dernier_n_billets ");
             exit(EXIT_FAILURE);
@@ -39,20 +40,22 @@ void recv_dernier_n_billets(int nb){
 
         msg_dernier_billets *msg = malloc(sizeof(msg_dernier_billets));
         memcpy(msg, recv_buffer, sizeof(msg_dernier_billets));
+        *(msg->data + msg->datalen) = '\0';
+
         printf("\n------------------------------------------\n");
         printf("Numero du fil : %d\n", msg->numfil);
         printf("Origine : %s\n", msg->origin);
         printf("Pseudo : %s\n", msg->pseudo);
         printf("Taille du message : %d\n", msg->datalen);
-        printf("message : \n%s\n", msg->data);
+        printf("message : %s\n", msg->data);
         printf("\n------------------------------------------\n");
         free(msg);
         nb--;
     }
 }
 
-void dernier_n_billets(uint16_t id, uint16_t f, uint16_t nb){
-    msg_fil *msg = compose_msg_dernier_n_billets(id, f, nb);
+void dernier_n_billets(uint16_t f, uint16_t nb){
+    msg_fil *msg = compose_msg_dernier_n_billets(f, nb);
 
     char send_buffer[sizeof(msg_fil)];
     memcpy(send_buffer, msg, sizeof(msg_fil));
@@ -68,7 +71,7 @@ void dernier_n_billets(uint16_t id, uint16_t f, uint16_t nb){
     memset(recv_buffer, 0, sizeof(msg_srv));
 
     if (recv(sock, recv_buffer, sizeof(msg_srv), 0) < 0){
-        perror("sendto()");
+        perror("recv() => dernier_n_billets ");
         exit(EXIT_FAILURE);
     }
 
@@ -79,6 +82,8 @@ void dernier_n_billets(uint16_t id, uint16_t f, uint16_t nb){
 
     uint16_t nb_real_billets = rep_srv->nb;
 
+    printf("Nombre de billets : %d\n", nb_real_billets);
+
     recv_dernier_n_billets(nb_real_billets);
 }
 
@@ -88,7 +93,7 @@ msg_inscri * inscription(const char * pseudo){
     return m;
 }
 
-msg_fil * poster_billet(uint16_t id, uint16_t f, const char * message){
+msg_fil * poster_billet(uint16_t f, const char * message){
     msg_fil * m = compose_msg_fil(message, 2, id, f, 0);
     return m;
 }
@@ -126,8 +131,9 @@ int main(){
 
     uint16_t e = *((uint16_t*)recv_buffer);
     uint8_t codeReq = 0;
-    uint16_t id = 0;
     extract_entete(e, &codeReq, &id);
 
     printf("codeReq : %d id : %d\n", codeReq, id);
+
+    dernier_n_billets(0,0);
 }

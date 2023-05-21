@@ -38,6 +38,7 @@ fil * add_new_fil(fil *fils, int id_proprietaire, const char * adresse, int num_
         fil *new_fil = malloc(sizeof(fil));
         new_fil->numero = num_fil;
         new_fil->id_proprietaire = id_proprietaire;
+        new_fil->adresse = malloc(sizeof(strlen(adresse)));
         strcpy(new_fil->adresse, adresse);
         new_fil->billets = NULL;
         new_fil->fichiers = NULL;
@@ -52,6 +53,7 @@ fil * add_new_fil(fil *fils, int id_proprietaire, const char * adresse, int num_
 int add_new_billet(fil *fils, int num_fil, int id_proprietaire, const char * message){
     billet *new_billet = malloc(sizeof(billet));
     new_billet->id_proprietaire = id_proprietaire;
+    new_billet->message = malloc(sizeof(strlen(message)));
     strcpy(new_billet->message, message);
     fil * f = get_fil(fils, num_fil);
     if(f != NULL){

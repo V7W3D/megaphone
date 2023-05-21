@@ -41,15 +41,22 @@ void envoyer_billets(int num_fil, int nb, struct sockaddr_in6 adrcli){
     else fil = mes_fils;
     billet *billets;
     if (fil) billets = fil->billets;
+
     while (nb && billets && fil){
+
+        int taille_billet = strlen(billets->message);
+
         msg = compose_msg_dernier_billet(
                 num_fil 
                 , get_name(my_users, fil->id_proprietaire)
                 , get_name(my_users, billets->id_proprietaire)
-                , strlen(billets->message)
-                ,billets->message);
+                , taille_billet
+                , billets->message);
+
         char send_buffer[sizeof(msg_dernier_billets)];
-        memcpy(send_buffer, msg, sizeof(send_buffer));
+        memcpy(send_buffer, msg, sizeof(msg_dernier_billets));
+
+        printf("%d,%d\n",fil->id_proprietaire,billets->id_proprietaire);
 
         if (sendto(sockfd, send_buffer, sizeof(msg_dernier_billets), 0,
                     (struct sockaddr *)&adrcli, sizeof(adrcli)) < 0){
@@ -103,7 +110,7 @@ int dernier_n_billets(const char *buffer, uint16_t id,
         exit(EXIT_FAILURE);
     }
 
-    envoyer_billets(reponse_srv->numfil, reponse_srv->nb, adrcli);
+    envoyer_billets(mf->numfil, reponse_srv->nb, adrcli);
 
     return 0;   
 }
@@ -131,7 +138,7 @@ int main(){
 
     my_users = malloc(sizeof(user));
 
-    int sockfd = socket(PF_INET6, SOCK_DGRAM, 0);
+    sockfd = socket(PF_INET6, SOCK_DGRAM, 0);
     if(sockfd < 0) {
         perror("socket()");
         return -1;
@@ -144,6 +151,11 @@ int main(){
     cliadr.sin6_port = htons(7777);
 
     if (bind(sockfd, (struct sockaddr *)&cliadr, sizeof(cliadr)) < 0) return -1;
+
+    
+    my_users = add_user(my_users, 1, "younes");
+    mes_fils = add_new_fil(mes_fils, 1, "::1", 0);
+    add_new_billet(mes_fils, 0, 1, "salut tout le monde");
 
     while (1) {
         struct sockaddr_in6 adrcli;
@@ -171,13 +183,17 @@ int main(){
 
         char send_buffer[sizeof(msg_srv)];
         msg_srv * ms = NULL;
-        ssize_t send_len = 0; 
+        ssize_t send_len = 0;
+
 
         switch(codeReq){
             case 0:
                 ms = inscription(recv_buffer);
                 memcpy(send_buffer, ms, sizeof(msg_srv));
                 send_len = sendto(sockfd, send_buffer, sizeof(msg_srv), 0, (struct sockaddr*)&adrcli, lencli);
+                break;
+            case 3:
+                dernier_n_billets(recv_buffer , id, adrcli);
                 break;
             default:
                 break;

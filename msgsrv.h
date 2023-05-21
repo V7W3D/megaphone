@@ -2,6 +2,8 @@
 #define MSGSRV_H
 
 #include <stdint.h>
+#define BUF_SIZE 256
+
 
 typedef struct {
     uint16_t entete;
@@ -14,7 +16,7 @@ typedef struct{
     char origin[10];
     char pseudo[10];
     uint8_t datalen;
-    char *data;
+    char data[BUF_SIZE];
 } msg_dernier_billets;
 
 msg_srv * compose_msg_srv(uint16_t entete, uint16_t numfil, uint16_t nb);

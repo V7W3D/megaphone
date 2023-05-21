@@ -24,9 +24,8 @@ msg_dernier_billets * compose_msg_dernier_billet(uint16_t numfil
     strcpy(msg->origin, origin);
     strcpy(msg->pseudo, pseudo);
     msg->datalen = datalen;
-    msg->data = malloc(datalen);
     strcpy(msg->data, data);
-
+    msg->data[datalen] = '\0';
     return msg;
 }
 
