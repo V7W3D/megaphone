@@ -51,31 +51,163 @@ int main(){
     servadr.sin6_port = htons(7777);
     inet_pton(AF_INET6, "::1", &servadr.sin6_addr);
 
-
     
-    msg_inscri * m = inscription("ahmed");
-
+    
+    msg_inscri * m = NULL;
+    msg_fil * ma = NULL;
     char send_buffer[sizeof(msg_inscri)];
-    memcpy(send_buffer, m, sizeof(msg_inscri));
-
-    if (sendto(sock, send_buffer, sizeof(msg_inscri), 0, (struct sockaddr*)&servadr, sizeof(servadr)) < 0) {
-        perror("Erreur lors de l'envoi du message");
-        exit(EXIT_FAILURE);
-    }
-
     char recv_buffer[sizeof(msg_srv)];
-    memset(&servadr, 0, sizeof(servadr));
-    socklen_t recv_len = sizeof(servadr);
+    char nomFichierTelechargement[100], nomFichier[100], message[256], pseudo[11];
 
-    if (recvfrom(sock, recv_buffer, sizeof(msg_inscri), 0, (struct sockaddr*)&servadr, &recv_len) < 0) {
-        perror("Erreur lors de l'envoi du message");
-        exit(EXIT_FAILURE);
-    }
-
-    uint16_t e = *((uint16_t*)recv_buffer);
     uint8_t codeReq = 0;
     uint16_t id = 0;
-    extract_entete(e, &codeReq, &id);
+    uint16_t e = *((uint16_t*)recv_buffer);
+    int numFil, n, f, numFilAbonnement, numFilFichier, port, numFilTelechargement, choix;
 
-    printf("codeReq : %d id : %d\n", codeReq, id);
+
+    
+    
+
+    do {
+        memset(send_buffer, 0, sizeof(send_buffer));
+        memset(recv_buffer, 0, sizeof(recv_buffer));
+        
+        printf("----------------------------------------\n");
+        printf("Menu :\n");
+        printf("1. Inscription\n");
+        printf("2. Poster un billet\n");
+        printf("3. Demander les n derniers billets\n");
+        printf("4. S'abonner à un fil\n");
+        printf("5. Ajouter un fichier\n");
+        printf("6. Télécharger un fichier\n");
+        printf("0. Quitter\n");
+        choix = -1;
+        printf("Choisissez une option : ");
+        scanf("%d", &choix);
+
+        switch (choix) {
+            case 1: {
+                printf("Option : Inscription\n");
+                
+                printf("Saisissez votre pseudo : ");
+                scanf("%s", pseudo);
+                // Fonction à définir ou  supp la condition
+                if (is_user_registered(my_users, pseudo) == 0) {
+                    printf("Erreur : L'utilisateur est déjà inscrit\n");
+               
+                } else {
+                    // Ajouter l'utilisateur à la liste des utilisateurs
+                    m = inscription(pseudo);
+                    memcpy(send_buffer, m, sizeof(msg_inscri));
+
+                    if (sendto(sock, send_buffer, sizeof(msg_inscri), 0, (struct sockaddr*)&servadr, sizeof(servadr)) < 0) {
+                        perror("Erreur lors de l'envoi du message");
+                        exit(EXIT_FAILURE);
+                    }
+
+                    memset(&servadr, 0, sizeof(servadr));
+                    socklen_t recv_len = sizeof(servadr);
+
+                    if (recvfrom(sock, recv_buffer, sizeof(msg_inscri), 0, (struct sockaddr*)&servadr, &recv_len) < 0) {
+                        perror("Erreur lors de l'envoi du message");
+                        exit(EXIT_FAILURE);
+                    }
+                    extract_entete(e, &codeReq, &id);
+                    printf("codeReq : %d id : %d\n", codeReq, id);
+                    
+                }
+                break;
+            }
+            case 2:
+                printf("Option : Poster un billet\n");
+                printf("Numéro du fil (0 pour un nouveau billet) : ");
+                scanf("%d", &numFil);
+                printf("Message : ");
+                scanf("%s", message);
+                //créer un nouveau fil si f = 0, poster un billet dans un fil existant sinon
+
+                break;
+            
+            case 3: {
+                printf("Option : Demander les n derniers billets\n");
+                printf("Valeur de n : ");
+                scanf("%d", &n);
+                printf("Valeur de f : ");
+                scanf("%d", &f);
+                if (n != 0) {
+                    if (f != 0) {
+                        // Traitement lorsque n et f sont différents de 0
+                    } else {
+                        // Traitement lorsque n est différent de 0 et f est égal à 0
+                    }
+                } else {
+                    if (f != 0) {
+                        // Traitement lorsque n est égal à 0 et f est différent de 0
+                    } else {
+                        // Traitement lorsque n et f sont tous les deux égaux à 0
+                    }
+                }
+                break;
+
+            }
+            case 4:
+                printf("Option : S'abonner à un fil\n");
+                printf("Numéro du fil auquel s'abonner : ");
+                scanf("%d", &numFilAbonnement);
+                ma = demande_abonnement(id, numFilAbonnement);
+                
+                memcpy(send_buffer, ma, sizeof(msg_fil));
+
+                if (sendto(sock, send_buffer, sizeof(msg_fil), 0, (struct sockaddr*)&servadr, sizeof(servadr)) < 0) {
+                    perror("Erreur lors de l'envoi du message");
+                    exit(EXIT_FAILURE);
+                }
+
+                memset(&servadr, 0, sizeof(servadr));
+                socklen_t recv_len = sizeof(servadr);
+
+                if (recvfrom(sock, recv_buffer, sizeof(msg_fil), 0, (struct sockaddr*)&servadr, &recv_len) < 0) {
+                    perror("Erreur lors de l'envoi du message");
+                    exit(EXIT_FAILURE);
+                }
+                extract_entete(e, &codeReq, &id);
+                printf("codeReq : %d id : %d\n", codeReq, id);
+
+                break;
+            case 5:
+                printf("Option : Ajouter un fichier\n");
+                printf("Numéro du fil : ");
+                scanf("%d", &numFilFichier);
+                printf("Nom du fichier : ");
+                scanf("%s", nomFichier);
+
+                // Ajouter le code pour ajouter un fichier
+                break;
+            
+            case 6:
+                printf("Option : Télécharger un fichier\n");
+                printf("Port de réception des paquets : ");
+                scanf("%d", &port);
+                printf("Nom du fichier à télécharger : ");
+                scanf("%s", nomFichierTelechargement);
+                printf("Numéro du fil : ");
+                scanf("%d", &numFilTelechargement);
+
+                // Ajouter le code pour télécharger un fichier
+                break;
+            
+            case 0:
+                printf("Au revoir !\n");
+                break;
+            default:
+                printf("Option invalide\n");
+                break;
+        }
+
+        printf("\n");
+    } while (choix != 0);
+
+
+
+    
 }
