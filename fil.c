@@ -105,16 +105,17 @@ int nb_msgs_total_fil(fil* fils){
     return nb;
 }
 
-void ajout_bloc_fichier(fil *fils, int numfil, int numbloc, fichier *fich){
-    if (numbloc == -1) return;
-    fil *f = get_fil(fils, num_fil);
+int ajout_bloc_fichier(fil *fils, int numfil, int numbloc, fichier *fich){
+    if (numbloc == -1) return -1;
+    fil *f = get_fil(fils, numfil);
+    if (!f) return -1;
     fichier *fichiers = f->fichiers;
     int indice = 1;
 
     if (numbloc == 1){
         fich->suivant = f->fichiers;
         f->fichiers = fich;
-        return;
+        return 1;
     }
     
     while (indice != numbloc && fichiers){
@@ -125,10 +126,11 @@ void ajout_bloc_fichier(fil *fils, int numfil, int numbloc, fichier *fich){
         fichiers = fichiers->suivant;
         indice++;
     }
+    return 1;
 }
 
 fichier* creer_fichier(int numeron, int id, char *nom, char *data){
-    fichier *fich = malloc(sizeof(fichiers));
+    fichier *fich = malloc(sizeof(fichier));
     fich->numero = numeron;
     fich->id_proprietaire = id;
     strcpy(fich->nom, nom);

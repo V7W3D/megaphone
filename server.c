@@ -4,6 +4,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 #include <string.h>
+#include <pthread.h>
 #include "user.h"
 #include "msgcli.h"
 #include "msgsrv.h"
@@ -16,7 +17,7 @@ lusers my_users = NULL;
 fil * mes_fils = NULL;
 uint16_t id_u = 0;
 int sockfd;
-pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t verrou = PTHREAD_MUTEX_INITIALIZER;
 
 void register_user(const char * pseudo){
     user * u = malloc(sizeof(user));
@@ -130,7 +131,7 @@ void ajout_fichier_aux(int id, int port
     memset(&servadrfichier, 0, sizeof(struct sockaddr_in6));
     servadrfichier.sin6_family = AF_INET6;
     servadrfichier.sin6_port = port;
-    servadrfichier.sin_addr.s_addr = INADDR_ANY;
+    servadrfichier.sin6_addr = in6addr_any;
 
     if (bind(sock_fichier, (struct sockaddr*)&servadrfichier, sizeof(struct sockaddr_in6)) < 0) {
         perror("Erreur lors de la liaison de la socket");
@@ -142,7 +143,7 @@ void ajout_fichier_aux(int id, int port
         char recv_buffer[sizeof(msg_fichier)];
         memset(recv_buffer, 0, sizeof(msg_fichier));
 
-        if (recv(sock_fichier, recv_buffer, sizeof(msg_srv), 0) < 0){
+        if (recv(sock_fichier, recv_buffer, sizeof(msg_fichier), 0) < 0){
             perror("recv() => ajout_fichier_aux ");
             exit(EXIT_FAILURE);
         }
@@ -153,6 +154,9 @@ void ajout_fichier_aux(int id, int port
         fichier *fich = creer_fichier(msg->numbloc, id, nom, msg->data);
 
         ajout_bloc_fichier(mes_fils, f, msg->numbloc, fich);
+
+        printf("%s\n", msg->data);
+            
 
         if (strlen(msg->data) < 512) break;
     }
@@ -166,16 +170,22 @@ void ajout_fichier(const char *buffer, uint16_t id,
     memcpy(msg, buffer, sizeof(msg_fil));
     msg->data = malloc(sizeof(msg->datalen));
     strncpy(msg->data, buffer+sizeof(msg_fil), msg->datalen);
-
+    *(msg->data + msg->datalen) = '\0';
     //envoie du port au client
     pthread_mutex_lock(&verrou);
     int port = htons(get_next_port());
     pthread_mutex_unlock(&verrou);
 
-    msg_srv *resp = compose_msg_srv(compose_entete(5, id), msg->numfil, port);
+    msg_srv *resp = compose_msg_srv(compose_entete(5, id)
+                        , ntohs(msg->numfil), ntohs(port));
 
     char send_buffer[sizeof(msg_srv)];
-    memcpy(send_buffer, reponse_srv, sizeof(send_buffer));
+    memcpy(send_buffer, resp, sizeof(send_buffer));
+
+    if(!get_fil(mes_fils, ntohs(msg->numfil)) || !est_inscrit(my_users, id)){
+        envoyer_erreur(adrcli);
+        return;
+    }
 
     if (sendto(sockfd, send_buffer, sizeof(msg_srv), 0,
             (struct sockaddr *)&adrcli, sizeof(adrcli)) < 0){
@@ -183,7 +193,7 @@ void ajout_fichier(const char *buffer, uint16_t id,
         exit(EXIT_FAILURE);
     }
 
-    ajout_fichier_aux(id, port, adrcli, msg->numfil, msg->data);
+    ajout_fichier_aux(id, port, adrcli, ntohs(msg->numfil), msg->data);
 
 }
 
@@ -227,7 +237,6 @@ int main(){
     
     my_users = add_user(my_users, 1, "younes");
     mes_fils = add_new_fil(mes_fils, 1, "::1", 0);
-    add_new_billet(mes_fils, 0, 1, "salut tout le monde");
 
     while (1) {
         struct sockaddr_in6 adrcli;
@@ -268,6 +277,8 @@ int main(){
                 dernier_n_billets(recv_buffer , id, adrcli);
                 break;
             default:
+            case 5:
+                ajout_fichier(recv_buffer, id, adrcli);
                 break;
         }
     }

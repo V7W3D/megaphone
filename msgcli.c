@@ -37,7 +37,9 @@ msg_fil * compose_msg_fil(const char * data, uint8_t codeReq, uint16_t id, uint1
     message->numfil = htons(numfil);
     message->nb = htons(nb);
     message->datalen = data_size;
+    message->data = (char*) (message + sizeof(msg_fil));
     memcpy(message->data, data, data_size);
+
     return message;
 }
 

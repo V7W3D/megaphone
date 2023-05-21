@@ -7,6 +7,7 @@
 #include "user.h"
 #include "msgcli.h"
 #include "msgsrv.h"
+#include "fil.h"
 
 #define SIZE_BLOC 512
 
@@ -80,7 +81,10 @@ void dernier_n_billets(uint16_t f, uint16_t nb){
     msg_srv *rep_srv = malloc(sizeof(msg_srv));
     memcpy(rep_srv, recv_buffer, sizeof(msg_srv));
 
-    if (erreur(rep_srv->entete)) return;
+    if (erreur(rep_srv->entete)){
+        printf("erreur!!\n");
+        return;
+    }
 
     uint16_t nb_real_billets = rep_srv->nb;
 
@@ -90,12 +94,13 @@ void dernier_n_billets(uint16_t f, uint16_t nb){
 }
 
 void send_empty_buffer(struct sockaddr_in6 servadrfichier){
+    int len = sizeof(msg_fichier);
     msg_fichier *msg = compose_msg_fichier(compose_entete(5, id), htons(-1), "");
     char send_buffer[len];
     memcpy(send_buffer, msg, len);
 
         //envoyer la requete au serveur
-    if (sendto(sock, send_buffer, sizeof(msg_fichier), 0,
+    if (sendto(sock, send_buffer, len, 0,
                     (struct sockaddr*)&servadrfichier, sizeof(servadrfichier)) < 0){
         perror("sendto()");
         exit(EXIT_FAILURE);
@@ -115,10 +120,10 @@ void ajout_fichier_aux(int port, FILE *fichier){
     //lecture du fichier
     char buffer[SIZE_BLOC+1];
     int numBloc = 1;
-    while (!feof(fichier)){
-        fgets(buffer, SIZE_BLOC, fichier);
+    long nb_read = 0;
+    while (!feof(fichier) && nb_read <= LEN_FILE){
+        nb_read += fread(buffer, sizeof(unsigned char), SIZE_BLOC, fichier);
         msg_fichier *msg = compose_msg_fichier(compose_entete(5, id), htons(numBloc), buffer);
-
         int len = sizeof(msg_fichier);
 
         char send_buffer[len];
@@ -137,14 +142,12 @@ void ajout_fichier_aux(int port, FILE *fichier){
         numBloc++;
     }
 
-    free(buffer);
-    close(sockFichier);
 }
 
 void ajout_fichier(uint16_t f, const char *nom, const char *path){
-    msg_fil * m = compose_msg_fil(nom, 5, id, f, 0);
+    msg_fil * msg = compose_msg_fil(nom, 5, id, f, 0);
 
-    FILE *fichier = fopen(path, "r");;
+    FILE *fichier = fopen(path, "rb");
     if (!fichier){
         perror("fopen() => ajout_fichier ");
         exit(EXIT_FAILURE);
@@ -156,7 +159,7 @@ void ajout_fichier(uint16_t f, const char *nom, const char *path){
     memcpy(send_buffer, msg, len);
 
     //envoyer la requete au serveur
-    if (sendto(sock, send_buffer, sizeof(msg_fil), 0,
+    if (sendto(sock, send_buffer, len, 0,
                 (struct sockaddr*)&servadr, sizeof(servadr)) < 0){
         perror("sendto()");
         exit(EXIT_FAILURE);
@@ -173,10 +176,14 @@ void ajout_fichier(uint16_t f, const char *nom, const char *path){
     msg_srv *rep_srv = malloc(sizeof(msg_srv));
     memcpy(rep_srv, recv_buffer, sizeof(msg_srv));
 
-    if (erreur(rep_srv->entete)) return;
+    if (erreur(rep_srv->entete)){
+        printf("erreur!!\n");
+        return;
+    }
 
-    ajout_fichier_aux(resp->nb, fichier);
-        
+    ajout_fichier_aux(rep_srv->nb, fichier);
+    
+    fclose(fichier);
 }
 
 msg_inscri * inscription(const char * pseudo){
@@ -227,5 +234,5 @@ int main(){
 
     printf("codeReq : %d id : %d\n", codeReq, id);
 
-    dernier_n_billets(0,0);
+    ajout_fichier(0, "younes", "./server.c");
 }

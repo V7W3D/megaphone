@@ -36,3 +36,7 @@ msg_srv *msg_erreur(){
     msg_err->nb = 0;
     return msg_err;
 }
+
+int get_next_port(){
+    return 1234;
+}

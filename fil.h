@@ -39,7 +39,7 @@ int add_new_billet(fil *fils, int num_fil, int id_proprietaire, const char * mes
 int nb_msgs_fil(fil*, int);
 int nb_fils(fil*);
 int nb_msgs_total_fil(fil*);
-void ajout_bloc_fichier(fil *fils, int numfil, int numbloc, fichier *fich);
+int ajout_bloc_fichier(fil *fils, int numfil, int numbloc, fichier *fich);
 fichier* creer_fichier(int numeron, int id, char *nom, char *data);
 
 #endif
