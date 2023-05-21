@@ -18,6 +18,7 @@ fil * mes_fils = NULL;
 uint16_t id_u = 0;
 int sockfd;
 pthread_mutex_t verrou = PTHREAD_MUTEX_INITIALIZER;
+int idFichier = 0;
 
 void register_user(const char * pseudo){
     user * u = malloc(sizeof(user));
@@ -119,6 +120,7 @@ int dernier_n_billets(const char *buffer, uint16_t id,
 
 void ajout_fichier_aux(int id, int port
     , struct sockaddr_in6 adrcli, int f, char *nom){
+
     int sock_fichier = socket(PF_INET6, SOCK_DGRAM, 0);
 
     if(sock_fichier < 0) {
@@ -138,6 +140,9 @@ void ajout_fichier_aux(int id, int port
         exit(EXIT_FAILURE);
     }
 
+    fichier *fich = creer_fichier(mes_fils, f, idFichier, id, nom);
+    idFichier++;
+
     while (1){
 
         char recv_buffer[sizeof(msg_fichier)];
@@ -151,9 +156,7 @@ void ajout_fichier_aux(int id, int port
         msg_fichier *msg = malloc(sizeof(msg_fichier));
         memcpy(msg, recv_buffer, sizeof(msg_fichier));
 
-        fichier *fich = creer_fichier(msg->numbloc, id, nom, msg->data);
-
-        ajout_bloc_fichier(mes_fils, f, msg->numbloc, fich);            
+        ajout_bloc_fichier(msg->numbloc, msg->data, fich);            
 
         if (strlen(msg->data) < 512) break;
     }
@@ -168,6 +171,8 @@ void ajout_fichier(const char *buffer, uint16_t id,
     msg->data = malloc(sizeof(msg->datalen));
     strncpy(msg->data, buffer+sizeof(msg_fil), msg->datalen);
     *(msg->data + msg->datalen) = '\0';
+
+    printf("%s\n", msg->data);
     //envoie du port au client
     pthread_mutex_lock(&verrou);
     int port = htons(get_allocated_port(id));
@@ -179,7 +184,11 @@ void ajout_fichier(const char *buffer, uint16_t id,
     char send_buffer[sizeof(msg_srv)];
     memcpy(send_buffer, resp, sizeof(send_buffer));
 
-    if(!get_fil(mes_fils, ntohs(msg->numfil)) || !est_inscrit(my_users, id)){
+    fil *fils;
+
+    if(!(fils=get_fil(mes_fils, ntohs(msg->numfil))) 
+        || !est_inscrit(my_users, id)
+        || exsist_fichier(fils, msg->data)){
         envoyer_erreur(adrcli);
         return;
     }

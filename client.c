@@ -82,7 +82,6 @@ void dernier_n_billets(uint16_t f, uint16_t nb){
     memcpy(rep_srv, recv_buffer, sizeof(msg_srv));
 
     if (erreur(rep_srv->entete)){
-        printf("erreur!!\n");
         return;
     }
 
@@ -157,6 +156,7 @@ void ajout_fichier(uint16_t f, const char *nom, const char *path){
 
     char send_buffer[len];
     memcpy(send_buffer, msg, len);
+    memcpy(send_buffer+sizeof(msg_fil), nom, strlen(nom));
 
     //envoyer la requete au serveur
     if (sendto(sock, send_buffer, len, 0,
@@ -177,7 +177,6 @@ void ajout_fichier(uint16_t f, const char *nom, const char *path){
     memcpy(rep_srv, recv_buffer, sizeof(msg_srv));
 
     if (erreur(rep_srv->entete)){
-        printf("erreur!!\n");
         return;
     }
 

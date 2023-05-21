@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 #define LEN_FILE 33554432 // 32 Mo
-#define LEN_MSG 513 
+#define LEN_MSG 512
 
 typedef struct billet{
     int numero; // numéro du billet
@@ -14,14 +14,18 @@ typedef struct billet{
 } billet;
 
 
-typedef struct fichier {
+typedef struct data_fichier {
+    char data[LEN_MSG]; // données du fichier
+    struct data_fichier *suivant; // pointeur vers le fichier suivant
+} data_fichier;
+
+typedef struct fichier{
     int numero; // numéro du fichier
     int id_proprietaire; // id de l'auteur
     char nom[10]; // nom du fichier
-    char data[LEN_MSG]; // données du fichier [33.5 Mo]
-    struct fichier *suivant; // pointeur vers le fichier suivant
-} fichier;
-
+    data_fichier *data;
+    struct fichier *suivant;
+}fichier;
 
 typedef struct fil{
     int numero; // numéro du fil
@@ -39,7 +43,8 @@ int add_new_billet(fil *fils, int num_fil, int id_proprietaire, const char * mes
 int nb_msgs_fil(fil*, int);
 int nb_fils(fil*);
 int nb_msgs_total_fil(fil*);
-int ajout_bloc_fichier(fil *fils, int numfil, int numbloc, fichier *fich);
-fichier* creer_fichier(int numeron, int id, char *nom, char *data);
+void ajout_bloc_fichier(int numbloc, char *bloc, fichier *fich);
+fichier* creer_fichier(fil *mes_fils, int f, int numeron, int id, char *nom);
+int exsist_fichier(fil *f, char *nom);
 
 #endif
