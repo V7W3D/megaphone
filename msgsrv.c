@@ -20,7 +20,7 @@ msg_srv * compose_msg_srv(uint16_t entete, uint16_t numfil, uint16_t nb){
 msg_dernier_billets * compose_msg_dernier_billet(uint16_t numfil
                     , char *origin, char *pseudo, uint8_t datalen, char *data){
     msg_dernier_billets * msg = malloc(sizeof(msg_dernier_billets));
-    msg->numfil = num_fil;
+    msg->numfil = numfil;
     strcpy(msg->origin, origin);
     strcpy(msg->pseudo, pseudo);
     msg->datalen = datalen;
@@ -32,8 +32,8 @@ msg_dernier_billets * compose_msg_dernier_billet(uint16_t numfil
 
 msg_srv *msg_erreur(){
     msg_srv *msg_err = malloc(sizeof(msg_srv));
-    msg_srv->entete = compose_entete(31, 0);
-    msg_srv->numfil = 0;
-    msg_srv->nb = 0;
+    msg_err->entete = compose_entete(31, 0);
+    msg_err->numfil = 0;
+    msg_err->nb = 0;
     return msg_err;
 }

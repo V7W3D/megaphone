@@ -32,7 +32,7 @@ int erreur(uint16_t entete){
 void recv_dernier_n_billets(int nb){
     while (nb){
         char recv_buffer[sizeof(msg_dernier_billets)];
-        if (recv(sock, recv_buffer, sizeof(msg_dernier_billets)) < 0){
+        if (recv(sock, recv_buffer, sizeof(msg_dernier_billets), 0) < 0){
             perror("recv() => recv_dernier_n_billets ");
             exit(EXIT_FAILURE);
         }
@@ -77,9 +77,9 @@ void dernier_n_billets(uint16_t id, uint16_t f, uint16_t nb){
 
     if (erreur(rep_srv->entete)) return;
 
-    uint16_t nb = rep_srv->nb;
+    uint16_t nb_real_billets = rep_srv->nb;
 
-    recv_dernier_n_billets(nb);
+    recv_dernier_n_billets(nb_real_billets);
 }
 
 msg_inscri * inscription(const char * pseudo){

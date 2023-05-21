@@ -27,7 +27,7 @@ void register_user(const char * pseudo){
 void envoyer_erreur(struct sockaddr_in6 adrcli){
     char send_buffer[sizeof(msg_srv)];
     memcpy(send_buffer, msg_erreur(), sizeof(msg_srv));
-    if (sendto(sockfd, send_buffer, sizeof(msg_srv),
+    if (sendto(sockfd, send_buffer, sizeof(msg_srv), 0,
             (struct sockaddr *)&adrcli, sizeof(adrcli)) < 0){
         perror("sendTo() => dernier_n_billets ");
         exit(EXIT_FAILURE);
@@ -43,15 +43,15 @@ void envoyer_billets(int num_fil, int nb, struct sockaddr_in6 adrcli){
     if (fil) billets = fil->billets;
     while (nb && billets && fil){
         msg = compose_msg_dernier_billet(
-                numfil 
-                , get_name(fil->id_proprietaire)
-                , get_name(billets->id_proprietaire)
+                num_fil 
+                , get_name(my_users, fil->id_proprietaire)
+                , get_name(my_users, billets->id_proprietaire)
                 , strlen(billets->message)
                 ,billets->message);
         char send_buffer[sizeof(msg_dernier_billets)];
         memcpy(send_buffer, msg, sizeof(send_buffer));
 
-        if (sendto(sockfd, send_buffer, sizeof(msg_dernier_billets),
+        if (sendto(sockfd, send_buffer, sizeof(msg_dernier_billets), 0,
                     (struct sockaddr *)&adrcli, sizeof(adrcli)) < 0){
             perror("sendTo() => envoyer_billets ");
             exit(EXIT_FAILURE);
@@ -72,22 +72,22 @@ int dernier_n_billets(const char *buffer, uint16_t id,
                                      struct sockaddr_in6 adrcli){
     msg_fil *mf = malloc(sizeof(msg_fil));
     memcpy(mf, buffer, sizeof(msg_fil));
-    if (!est_inscrit(lusers, id)){
-        envoyer_erreur();
+    if (!est_inscrit(my_users, id)){
+        envoyer_erreur(adrcli);
         return -1;
     }
     msg_srv *reponse_srv = malloc(sizeof(msg_srv));
     reponse_srv->entete = mf->entete;
     
     if (mf->numfil > 0){
-        int nb_msgs_fil = nb_msgs_fil(mes_fils, mf->numfil);
-        if (nb_msgs_fil < 0){
-            envoyer_erreur();
+        int nb_msgs = nb_msgs_fil(mes_fils, mf->numfil);
+        if (nb_msgs < 0){
+            envoyer_erreur(adrcli);
             return -1;
         }
         reponse_srv->numfil = mf->numfil;
-        reponse_srv->nb = (mf->nb > nb_msgs_fil || mf->nb == 0) 
-                                    ? nb_msgs_fil : mf->nb ;
+        reponse_srv->nb = (mf->nb > nb_msgs || mf->nb == 0) 
+                                    ? nb_msgs : mf->nb ;
     }
     else{
         reponse_srv->numfil = nb_fils(mes_fils);
@@ -97,7 +97,7 @@ int dernier_n_billets(const char *buffer, uint16_t id,
     char send_buffer[sizeof(msg_srv)];
     memcpy(send_buffer, reponse_srv, sizeof(send_buffer));
 
-    if (sendto(sockfd, send_buffer, sizeof(msg_srv),
+    if (sendto(sockfd, send_buffer, sizeof(msg_srv), 0,
             (struct sockaddr *)&adrcli, sizeof(adrcli)) < 0){
         perror("sendTo() => dernier_n_billets ");
         exit(EXIT_FAILURE);
@@ -122,6 +122,7 @@ msg_srv * poster_billet(uint16_t id, const char * buffer){
     msg_fil * mf = malloc(sizeof(msg_fil));
     memcpy(mf, buffer, sizeof(msg_fil));
     //int n = add_new_billet(mes_fils, mf->numfil, id, mf->data);
+    return NULL;
 }
 
 

@@ -4,14 +4,14 @@
 
 typedef struct user {
     int id;
-    char pseudo[15];
+    char pseudo[10];
     struct user * next;
 } user;
 
 typedef user * lusers;
 
 lusers add_user(lusers head, int id, const char * pseudo);
-int est_inscit(lusers head, int id);
-char *get_name(int id_user);
+int est_inscrit(lusers head, int id);
+char *get_name(lusers users, int id_user);
 
 #endif
