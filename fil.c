@@ -12,14 +12,6 @@
 char current_adr[INET6_ADDRSTRLEN] = "ff02::1";
 int f = 0;
 
-struct sockaddr_in6 get_current_adr() {
-    struct sockaddr_in6 adresse;
-    memset(&adresse, 0, sizeof(struct sockaddr_in6));
-    adresse.sin6_family = AF_INET6;
-    inet_pton(AF_INET6, current_adr, &(adresse.sin6_addr));
-    return adresse;
-}
-
 void next_adr_multi() {
     char* dernierGroupe = strrchr(current_adr, ':');
     unsigned int dernierGroupeValeur;
@@ -45,8 +37,9 @@ fil * add_new_fil(fil *fils, int num_fil){
         new_fil->fichiers = NULL;
         new_fil->abonnes = NULL;
         new_fil->suivant = fils;
-        /*new_fil->adresse = get_current_adr();
-        next_adr_multi();*/
+        new_fil->adresse = malloc(INET6_ADDRSTRLEN * sizeof(char));
+        strcpy(new_fil->adresse, current_adr);
+        next_adr_multi();
         return new_fil;
     }
     return NULL;
