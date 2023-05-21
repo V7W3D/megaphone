@@ -80,35 +80,4 @@ char * add_new_abonne(fil *fils, int num_fil, uint16_t id){
     return NULL;
 }
 
-void* notificationThread(void* arg) {
-    // Boucle pour gérer les notifications en continu
-    while (1) {
-        // Logique de gestion des notifications
-        printf("Traitement des notifications...\n");
-
-        // Temporisation de 20 secondes
-        sleep(20);
-    }
-}
-
-
-
-/*
-int main(int argc, char const *argv[]){
-    pthread_t thread;
-    if (pthread_create(&thread, NULL, notificationThread, NULL) != 0) {
-        perror("Erreur lors de la création du thread de gestion des notifications");
-        exit(EXIT_FAILURE);
-    }
-
-    // Continuer avec les autres actions du serveur
-    printf("Serveur en cours d'exécution...\n");
-
-    // Attendre la fin du thread de gestion des notifications (ceci ne sera jamais atteint dans cet exemple)
-    pthread_join(thread, NULL);
-
-    return 0;
-}
-*/
-
 

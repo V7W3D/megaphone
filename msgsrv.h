@@ -16,6 +16,11 @@ typedef struct{
     uint8_t adr[16];
 } msg_srv_fil;
 
+typedef struct{
+    char * adr;
+    int port;
+} adr_port;
+
 msg_srv * compose_msg_srv(uint16_t entete, uint16_t numfil, uint16_t nb);
 msg_srv_fil * compose_msg_srv_fil(uint16_t entete, uint16_t numfil, uint16_t nb, const char * adr);
 

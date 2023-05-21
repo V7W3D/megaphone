@@ -10,6 +10,34 @@
 
 #define BUF_SIZE 256
 
+void* recevoir_notification(void* arg){
+    adr_port * a = (adr_port *) arg;
+    int sock = socket(AF_INET6, SOCK_DGRAM, 0);
+
+    struct sockaddr_in6 grsock;
+    memset(&grsock, 0, sizeof(grsock));
+    grsock.sin6_family = AF_INET6;
+    grsock.sin6_addr = in6addr_any;
+    grsock.sin6_port = htons(a->port);
+
+    if(bind(sock, (struct sockaddr*)&grsock, sizeof(grsock))) {
+        close(sock);
+        return NULL;
+    }
+
+    struct ipv6_mreq group;
+    inet_pton (AF_INET6, a->adr, &group.ipv6mr_multiaddr.s6_addr);
+    int ifindex = if_nametoindex ("eth0");
+    group.ipv6mr_interface = ifindex;
+    if(setsockopt(sock, IPPROTO_IPV6, IPV6_JOIN_GROUP, &group, sizeof(group))<0){
+        close(sock);
+        return NULL;
+    }
+    while(1){
+
+    }
+}
+
 msg_inscri * inscription(const char * pseudo){
     uint16_t e = compose_entete(0,0);
     msg_inscri * m = compose_msg_inscri(e, pseudo);
@@ -27,6 +55,7 @@ msg_fil * demande_abonnement(uint16_t id, uint16_t f){
 }
 
 void sabonner(int sockfd, const char * buffer){
+    //Je pense que ça serait mieux d'avoir plusieurs sockets ?
     msg_srv_fil * mf = malloc(sizeof(msg_srv_fil));
     memcpy(mf, buffer, sizeof(msg_srv_fil));
     char data_buf[16];
@@ -35,7 +64,7 @@ void sabonner(int sockfd, const char * buffer){
     if (setsockopt(sockfd, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, (char*)&mreq, sizeof(mreq)) < 0) {
         perror("Erreur lors de l'abonnement à l'adresse de multidiffusion");
     }
-    
+
 }
 
 int main(){
@@ -45,13 +74,18 @@ int main(){
         return -1;
     }
 
+    int ok = 1;
+    if(setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &ok, sizeof(ok)) < 0) {
+        perror("echec de SO_REUSEADDR");
+        close(sock);
+        return 1;
+    }
+
     struct sockaddr_in6 servadr;
     memset(&servadr, 0, sizeof(servadr));
     servadr.sin6_family = AF_INET6;
     servadr.sin6_port = htons(7777);
     inet_pton(AF_INET6, "::1", &servadr.sin6_addr);
-
-
     
     msg_inscri * m = inscription("ahmed");
 

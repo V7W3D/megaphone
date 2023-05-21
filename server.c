@@ -17,6 +17,24 @@ fil * mes_fils = NULL;
 uint16_t id_u = 0;
 int f = 0; //id des fils, s'incrémente à chaque ajout d'un nouvel fil
 
+void* envoyer_notification(void* arg) {
+    adr_port * a = (adr_port *) arg;
+    int sock = socket(AF_INET6, SOCK_DGRAM, 0);
+    struct sockaddr_in6 grsock;
+    memset(&grsock, 0, sizeof(grsock));
+    grsock.sin6_family = AF_INET6;
+    inet_pton(AF_INET6, a->adr, &grsock.sin6_addr);
+    grsock.sin6_port = htons(a->port);
+    int ifindex = if_nametoindex ("eth0");
+    if(setsockopt(sock, IPPROTO_IPV6, IPV6_MULTICAST_IF, &ifindex, sizeof(ifindex))){
+        close(sock);
+        return NULL;
+    }
+    while (1) {
+        //sento(sock, buf, buflen, 0, (struct sockaddr*)&grsock, sizeof(grsock));
+    }
+}
+
 void register_user(const char * pseudo){
     user * u = malloc(sizeof(user));
     u->id = id_u;
@@ -49,6 +67,9 @@ msg_srv * poster_billet(uint16_t id, const char * buffer){
     if(n < 0){
         return erreur();
     }
+
+    //lancer un thread qui écoutera lechghal nni
+
     uint16_t entete = mf->entete;
     msg_srv * ms = compose_msg_srv(entete, mf->numfil, 0);
     return ms;
