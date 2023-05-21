@@ -153,10 +153,7 @@ void ajout_fichier_aux(int id, int port
 
         fichier *fich = creer_fichier(msg->numbloc, id, nom, msg->data);
 
-        ajout_bloc_fichier(mes_fils, f, msg->numbloc, fich);
-
-        printf("%s\n", msg->data);
-            
+        ajout_bloc_fichier(mes_fils, f, msg->numbloc, fich);            
 
         if (strlen(msg->data) < 512) break;
     }
@@ -173,7 +170,7 @@ void ajout_fichier(const char *buffer, uint16_t id,
     *(msg->data + msg->datalen) = '\0';
     //envoie du port au client
     pthread_mutex_lock(&verrou);
-    int port = htons(get_next_port());
+    int port = htons(get_allocated_port(id));
     pthread_mutex_unlock(&verrou);
 
     msg_srv *resp = compose_msg_srv(compose_entete(5, id)

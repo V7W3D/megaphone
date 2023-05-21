@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 #define BUF_SIZE 256
-int PORT;
+#define PORT 1024
 
 
 typedef struct {
@@ -24,6 +24,6 @@ msg_srv * compose_msg_srv(uint16_t entete, uint16_t numfil, uint16_t nb);
 msg_dernier_billets * compose_msg_dernier_billet(uint16_t numfil
                     , char *origin, char *pseudo, uint8_t datalen, char *data);
 msg_srv *msg_erreur();
-int get_next_port();
+int get_allocated_port(int id);
 
 #endif

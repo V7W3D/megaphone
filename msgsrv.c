@@ -37,6 +37,6 @@ msg_srv *msg_erreur(){
     return msg_err;
 }
 
-int get_next_port(){
-    return 1234;
+int get_allocated_port(int id){
+    return PORT+id;
 }
