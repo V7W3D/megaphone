@@ -2,7 +2,15 @@
 #define FIL_H
 #include "user.h"
 #include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <pthread.h>
 
+extern char current_adr[INET6_ADDRSTRLEN];
+extern int f;
 
 typedef struct billet{
     int numero; // numéro du billet
@@ -23,15 +31,16 @@ typedef struct fichier {
 
 typedef struct fil{
     int numero; // numéro du fil
-    struct sockaddr_in6 adresse; // adresse de multidifusion?
+    char * adresse; // adresse de multidifusion?
     billet * billets; // (Pile) liste des billets publiés
     fichier * fichiers; // (Pile) liste des fichiers publiés
-    uint16_t * abonnes; // liste des personnes abonnées à ce fil
+    lusers * abonnes; // liste des personnes abonnées à ce fil
     struct fil * suivant; // pointeur vers le fil suivant
 } fil;
 
 fil * get_fil(fil * fils, int num_fil);
 fil * add_new_fil(fil *fils, int num_fil);
-int add_new_billet(fil *fils, int * f, int num_fil, int id_proprietaire, const char * message);
+int add_new_billet(fil *fils, int num_fil, int id_proprietaire, const char * message);
+char * add_new_abonne(fil *fils, int num_fil, uint16_t id);
 
 #endif

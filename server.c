@@ -45,12 +45,24 @@ msg_srv * poster_billet(uint16_t id, const char * buffer){
     memcpy(mf, buffer, sizeof(msg_fil));
     char data_buf[mf->datalen];
     memcpy(data_buf, mf->data, mf->datalen);
-    int n = add_new_billet(mes_fils, &f, mf->numfil, id, mf->data);
+    int n = add_new_billet(mes_fils, mf->numfil, id, mf->data);
     if(n < 0){
         return erreur();
     }
     uint16_t entete = mf->entete;
     msg_srv * ms = compose_msg_srv(entete, mf->numfil, 0);
+    return ms;
+}
+
+msg_srv * abonnement(uint16_t id, const char * buffer){
+    msg_fil * mf = malloc(sizeof(msg_fil));
+    memcpy(mf, buffer, sizeof(msg_fil));
+    char * adr = add_new_abonne(mes_fils, mf->numfil, id);
+    if(adr != NULL){
+        return erreur();
+    }
+    uint16_t entete = mf->entete;
+    msg_srv * ms = compose_msg_srv_fil(entete, mf->numfil, 7777, adr);
     return ms;
 }
 
@@ -108,6 +120,10 @@ int main(){
                 break;
             case 2:
                 ms = poster_billet(id, recv_buffer);
+                memecpy(send_buffer, ms, sizeof(msg_srv));
+                send_len = sendto(sockfd, send_buffer, sizeof(msg_srv), 0, (struct sockaddr*)&adrcli, lencli);
+            case 4:
+                ms = abonnement(id, recv_buffer);
                 memecpy(send_buffer, ms, sizeof(msg_srv));
                 send_len = sendto(sockfd, send_buffer, sizeof(msg_srv), 0, (struct sockaddr*)&adrcli, lencli);
             default:

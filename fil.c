@@ -9,11 +9,8 @@
 
 #define LEN_FILE 33554432 // 32 Mo
 
-char current_adr[INET6_ADDRSTRLEN];
-
-void init(){
-    strncpy(current_adr, "ff02::1", INET6_ADDRSTRLEN);
-}
+char current_adr[INET6_ADDRSTRLEN] = "ff02::1";
+int f = 0;
 
 struct sockaddr_in6 get_current_adr() {
     struct sockaddr_in6 adresse;
@@ -23,16 +20,12 @@ struct sockaddr_in6 get_current_adr() {
     return adresse;
 }
 
-void next_adr_multi(struct sockaddr_in6* adresseActuelle, struct sockaddr_in6* adresseSuivante) {
-    memcpy(adresseSuivante, adresseActuelle, sizeof(struct sockaddr_in6));
-    char adresseTexte[INET6_ADDRSTRLEN];
-    inet_ntop(AF_INET6, &(adresseSuivante->sin6_addr), adresseTexte, INET6_ADDRSTRLEN);
-    char* dernierGroupe = strrchr(adresseTexte, ':');
+void next_adr_multi() {
+    char* dernierGroupe = strrchr(current_adr, ':');
     unsigned int dernierGroupeValeur;
     sscanf(dernierGroupe + 1, "%x", &dernierGroupeValeur);
     unsigned int prochainDernierGroupeValeur = dernierGroupeValeur + 1;
     sprintf(dernierGroupe + 1, "%x", prochainDernierGroupeValeur);
-    inet_pton(AF_INET6, adresseTexte, &(adresseSuivante->sin6_addr));
 }
 
 fil * get_fil(fil * fils, int num_fil){
@@ -52,13 +45,15 @@ fil * add_new_fil(fil *fils, int num_fil){
         new_fil->fichiers = NULL;
         new_fil->abonnes = NULL;
         new_fil->suivant = fils;
+        /*new_fil->adresse = get_current_adr();
+        next_adr_multi();*/
         return new_fil;
     }
     return NULL;
 }
 
 // Inserer un nouveau billet dans la liste billets d'un fil donné, retoune 0 si le billet a été ajouté -1 sinon
-int add_new_billet(fil *fils, int * f, int num_fil, int id_proprietaire, const char * message){
+int add_new_billet(fil *fils, int num_fil, int id_proprietaire, const char * message){
     if(num_fil != 0){
         billet *new_billet = malloc(sizeof(billet));
         new_billet->id_proprietaire = id_proprietaire;
@@ -71,9 +66,18 @@ int add_new_billet(fil *fils, int * f, int num_fil, int id_proprietaire, const c
         }
         return -1;
     }
-    fil * new_fil = add_new_fil(fils, *f);
-    *f += 1;
-    return add_new_billet(fils, f, new_fil->numero, id_proprietaire, message);
+    fil * new_fil = add_new_fil(fils, f);
+    f += 1;
+    return add_new_billet(fils, new_fil->numero, id_proprietaire, message);
+}
+
+char * add_new_abonne(fil *fils, int num_fil, uint16_t id){
+    fil * f = get_fil(fils, num_fil);
+    if(f != NULL){
+        add_user(f->abonnes, id, NULL);
+        return f->adresse;
+    }
+    return NULL;
 }
 
 void* notificationThread(void* arg) {

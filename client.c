@@ -21,6 +21,23 @@ msg_fil * poster_billet(uint16_t id, uint16_t f, const char * message){
     return m;
 }
 
+msg_fil * demande_abonnement(uint16_t id, uint16_t f){
+    msg_fil * m = compose_msg_fil(NULL, 4, id, f, 0);
+    return m;
+}
+
+void sabonner(int sockfd, const char * buffer){
+    msg_srv_fil * mf = malloc(sizeof(msg_srv_fil));
+    memcpy(mf, buffer, sizeof(msg_srv_fil));
+    char data_buf[16];
+    memcpy(data_buf, mf->adr, 16);
+    struct ipv6_mreq mreq;
+    if (setsockopt(sockfd, IPPROTO_IPV6, IPV6_ADD_MEMBERSHIP, (char*)&mreq, sizeof(mreq)) < 0) {
+        perror("Erreur lors de l'abonnement à l'adresse de multidiffusion");
+    }
+    
+}
+
 int main(){
     int sock = socket(PF_INET6, SOCK_DGRAM, 0);
     if(sock < 0) {
@@ -34,7 +51,7 @@ int main(){
     servadr.sin6_port = htons(7777);
     inet_pton(AF_INET6, "::1", &servadr.sin6_addr);
 
-    
+
     
     msg_inscri * m = inscription("ahmed");
 
