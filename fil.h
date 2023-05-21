@@ -3,6 +3,8 @@
 #include "user.h"
 #include <stdint.h>
 
+#define LEN_FILE 33554432 // 32 Mo
+#define LEN_MSG 513 
 
 typedef struct billet{
     int numero; // numéro du billet
@@ -15,8 +17,8 @@ typedef struct billet{
 typedef struct fichier {
     int numero; // numéro du fichier
     int id_proprietaire; // id de l'auteur
-    char * nom; // nom du fichier
-    char * data; // données du fichier [33.5 Mo]
+    char nom[10]; // nom du fichier
+    char data[LEN_MSG]; // données du fichier [33.5 Mo]
     struct fichier *suivant; // pointeur vers le fichier suivant
 } fichier;
 

@@ -8,6 +8,8 @@
 #include "msgcli.h"
 #include "msgsrv.h"
 
+#define SIZE_BLOC 512
+
 int sock;
 uint16_t id;
 struct sockaddr_in6 servadr;
@@ -85,6 +87,78 @@ void dernier_n_billets(uint16_t f, uint16_t nb){
     printf("Nombre de billets : %d\n", nb_real_billets);
 
     recv_dernier_n_billets(nb_real_billets);
+}
+
+void ajout_fichier_aux(int port, FILE *fichier){
+
+    struct sockaddr_in6 servadrfichier;
+
+    memset(&servadrfichier, 0, sizeof(servadr));
+    servadrfichier.sin6_family = AF_INET6;
+    servadrfichier.sin6_port = port;
+    inet_pton(AF_INET6, "::1", &servadrfichier.sin6_addr);
+
+    //lecture du fichier
+    char buffer[SIZE_BLOC];
+    int numBloc = 1;
+    while (!feof(fichier)){
+        fgets(buffer, SIZE_BLOC, fichier);
+        msg_fichier *msg = compose_msg_fichier(compose_entete(5, id), htons(numBloc), buffer);
+
+        int len = sizeof(msg_fichier);
+
+        char send_buffer[len];
+        memcpy(send_buffer, msg, len);
+
+        //envoyer la requete au serveur
+        if (sendto(sock, send_buffer, sizeof(msg_fil), 0,
+                    (struct sockaddr*)&servadr, sizeof(servadr)) < 0){
+            perror("sendto()");
+            exit(EXIT_FAILURE);
+        }
+
+        numBloc++;
+    }
+
+    close(sockFichier);
+}
+
+void ajout_fichier(uint16_t f, const char *nom, const char *path){
+    msg_fil * m = compose_msg_fil(nom, 5, id, f, 0);
+
+    FILE *fichier = fopen(path, "r");;
+    if (!fichier){
+        perror("fopen() => ajout_fichier ");
+        exit(EXIT_FAILURE);
+    }
+
+    int len = sizeof(msg_fil) + strlen(nom);
+
+    char send_buffer[len];
+    memcpy(send_buffer, msg, len);
+
+    //envoyer la requete au serveur
+    if (sendto(sock, send_buffer, sizeof(msg_fil), 0,
+                (struct sockaddr*)&servadr, sizeof(servadr)) < 0){
+        perror("sendto()");
+        exit(EXIT_FAILURE);
+    }
+
+    char recv_buffer[sizeof(msg_srv)];
+    memset(recv_buffer, 0, sizeof(msg_srv));
+
+    if (recv(sock, recv_buffer, sizeof(msg_srv), 0) < 0){
+        perror("recv() => dernier_n_billets ");
+        exit(EXIT_FAILURE);
+    }
+
+    msg_srv *rep_srv = malloc(sizeof(msg_srv));
+    memcpy(rep_srv, recv_buffer, sizeof(msg_srv));
+
+    if (erreur(rep_srv->entete)) return;
+
+    ajout_fichier_aux(resp->nb, fichier);
+        
 }
 
 msg_inscri * inscription(const char * pseudo){

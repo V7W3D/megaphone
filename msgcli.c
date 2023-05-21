@@ -40,3 +40,11 @@ msg_fil * compose_msg_fil(const char * data, uint8_t codeReq, uint16_t id, uint1
     memcpy(message->data, data, data_size);
     return message;
 }
+
+msg_fichier* compose_msg_fichier(uint16_t entete, uint16_t numbloc, char *data){
+    msg_fichier* msg = malloc(sizeof(msg_fichier));
+    msg->entete = entete;
+    msg->numbloc = numbloc;
+    strcpy(msg->data, data);
+    return msg;
+}

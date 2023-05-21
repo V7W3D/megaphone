@@ -16,6 +16,7 @@ lusers my_users = NULL;
 fil * mes_fils = NULL;
 uint16_t id_u = 0;
 int sockfd;
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 void register_user(const char * pseudo){
     user * u = malloc(sizeof(user));
@@ -113,6 +114,72 @@ int dernier_n_billets(const char *buffer, uint16_t id,
     envoyer_billets(mf->numfil, reponse_srv->nb, adrcli);
 
     return 0;   
+}
+
+void ajout_fichier_aux(int port, struct sockaddr_in6 adrcli, int f){
+    int sock_fichier = socket(PF_INET6, SOCK_DGRAM, 0);
+
+    if(sock_fichier < 0) {
+        perror("socket() => ajout_fichier_aux ");
+        exit(EXIT_FAILURE);
+    }    
+
+    struct sockaddr_in6 servadrfichier;
+
+    memset(&servadrfichier, 0, sizeof(struct sockaddr_in6));
+    servadrfichier.sin6_family = AF_INET6;
+    servadrfichier.sin6_port = port;
+    servadrfichier.sin_addr.s_addr = INADDR_ANY;
+
+    if (bind(sock_fichier, (struct sockaddr*)&servadrfichier, sizeof(struct sockaddr_in6)) < 0) {
+        perror("Erreur lors de la liaison de la socket");
+        exit(EXIT_FAILURE);
+    }
+
+    while (1){
+
+        char recv_buffer[sizeof(msg_fichier)];
+        memset(recv_buffer, 0, sizeof(msg_fichier));
+
+        if (recv(sock_fichier, recv_buffer, sizeof(msg_srv), 0) < 0){
+            perror("recv() => ajout_fichier_aux ");
+            exit(EXIT_FAILURE);
+        }
+
+        msg_fichier *msg = malloc(sizeof(msg_fichier));
+        memcpy(msg, recv_buffer, sizeof(msg_fichier));
+
+        ajout_bloc_fichier(f, ntohs(msg->numbloc), msg->data);
+    }
+
+    close(sock_fichier);
+}
+
+void ajout_fichier(const char *buffer, uint16_t id,
+                                     struct sockaddr_in6 adrcli){
+    msg_fil *msg = malloc(sizeof(msg_fil));
+    memcpy(msg, buffer, sizeof(msg_fil));
+    msg->data = malloc(sizeof(msg->datalen));
+    strncpy(msg->data, buffer+sizeof(msg_fil), msg->datalen);
+
+    //envoie du port au client
+    pthread_mutex_lock(&verrou);
+    int port = htons(get_next_port());
+    pthread_mutex_unlock(&verrou);
+
+    msg_srv *resp = compose_msg_srv(compose_entete(5, id), msg->numfil, port);
+
+    char send_buffer[sizeof(msg_srv)];
+    memcpy(send_buffer, reponse_srv, sizeof(send_buffer));
+
+    if (sendto(sockfd, send_buffer, sizeof(msg_srv), 0,
+            (struct sockaddr *)&adrcli, sizeof(adrcli)) < 0){
+        perror("sendTo() => dernier_n_billets ");
+        exit(EXIT_FAILURE);
+    }
+
+    ajout_fichier_aux(port, adrcli, msg->numfil);
+
 }
 
 msg_srv * inscription(const char * buffer){

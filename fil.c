@@ -8,10 +8,6 @@
 #include "fil.h"
 #include "user.h"
 
-#define LEN_FILE 33554432 // 32 Mo
-#define LEN_MSG 255 
-
-
 /* -- Fil --
 Chaque fil de discussions est constitué de:
     - numéro du fil

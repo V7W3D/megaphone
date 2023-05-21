@@ -4,7 +4,7 @@
 
 typedef struct user {
     int id;
-    char pseudo[15];
+    char pseudo[10];
     struct user * next;
 } user;
 
