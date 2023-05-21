@@ -89,17 +89,31 @@ void dernier_n_billets(uint16_t f, uint16_t nb){
     recv_dernier_n_billets(nb_real_billets);
 }
 
+void send_empty_buffer(struct sockaddr_in6 servadrfichier){
+    msg_fichier *msg = compose_msg_fichier(compose_entete(5, id), htons(-1), "");
+    char send_buffer[len];
+    memcpy(send_buffer, msg, len);
+
+        //envoyer la requete au serveur
+    if (sendto(sock, send_buffer, sizeof(msg_fichier), 0,
+                    (struct sockaddr*)&servadrfichier, sizeof(servadrfichier)) < 0){
+        perror("sendto()");
+        exit(EXIT_FAILURE);
+    }
+
+}
+
 void ajout_fichier_aux(int port, FILE *fichier){
 
     struct sockaddr_in6 servadrfichier;
 
-    memset(&servadrfichier, 0, sizeof(servadr));
+    memset(&servadrfichier, 0, sizeof(servadrfichier));
     servadrfichier.sin6_family = AF_INET6;
     servadrfichier.sin6_port = port;
     inet_pton(AF_INET6, "::1", &servadrfichier.sin6_addr);
 
     //lecture du fichier
-    char buffer[SIZE_BLOC];
+    char buffer[SIZE_BLOC+1];
     int numBloc = 1;
     while (!feof(fichier)){
         fgets(buffer, SIZE_BLOC, fichier);
@@ -111,15 +125,19 @@ void ajout_fichier_aux(int port, FILE *fichier){
         memcpy(send_buffer, msg, len);
 
         //envoyer la requete au serveur
-        if (sendto(sock, send_buffer, sizeof(msg_fil), 0,
-                    (struct sockaddr*)&servadr, sizeof(servadr)) < 0){
+        if (sendto(sock, send_buffer, len, 0,
+                    (struct sockaddr*)&servadrfichier, sizeof(servadrfichier)) < 0){
             perror("sendto()");
             exit(EXIT_FAILURE);
         }
 
+        if (feof(fichier) && strlen(buffer)>=SIZE_BLOC) 
+            send_empty_buffer(servadrfichier);
+
         numBloc++;
     }
 
+    free(buffer);
     close(sockFichier);
 }
 

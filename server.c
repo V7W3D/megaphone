@@ -116,7 +116,8 @@ int dernier_n_billets(const char *buffer, uint16_t id,
     return 0;   
 }
 
-void ajout_fichier_aux(int port, struct sockaddr_in6 adrcli, int f){
+void ajout_fichier_aux(int id, int port
+    , struct sockaddr_in6 adrcli, int f, char *nom){
     int sock_fichier = socket(PF_INET6, SOCK_DGRAM, 0);
 
     if(sock_fichier < 0) {
@@ -149,7 +150,11 @@ void ajout_fichier_aux(int port, struct sockaddr_in6 adrcli, int f){
         msg_fichier *msg = malloc(sizeof(msg_fichier));
         memcpy(msg, recv_buffer, sizeof(msg_fichier));
 
-        ajout_bloc_fichier(f, ntohs(msg->numbloc), msg->data);
+        fichier *fich = creer_fichier(msg->numbloc, id, nom, msg->data);
+
+        ajout_bloc_fichier(mes_fils, f, msg->numbloc, fich);
+
+        if (strlen(msg->data) < 512) break;
     }
 
     close(sock_fichier);
@@ -178,7 +183,7 @@ void ajout_fichier(const char *buffer, uint16_t id,
         exit(EXIT_FAILURE);
     }
 
-    ajout_fichier_aux(port, adrcli, msg->numfil);
+    ajout_fichier_aux(id, port, adrcli, msg->numfil, msg->data);
 
 }
 

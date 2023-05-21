@@ -105,22 +105,34 @@ int nb_msgs_total_fil(fil* fils){
     return nb;
 }
 
-/*
-int main(int argc, char const *argv[]){
-    pthread_t thread;
-    if (pthread_create(&thread, NULL, notificationThread, NULL) != 0) {
-        perror("Erreur lors de la création du thread de gestion des notifications");
-        exit(EXIT_FAILURE);
+void ajout_bloc_fichier(fil *fils, int numfil, int numbloc, fichier *fich){
+    if (numbloc == -1) return;
+    fil *f = get_fil(fils, num_fil);
+    fichier *fichiers = f->fichiers;
+    int indice = 1;
+
+    if (numbloc == 1){
+        fich->suivant = f->fichiers;
+        f->fichiers = fich;
+        return;
     }
-
-    // Continuer avec les autres actions du serveur
-    printf("Serveur en cours d'exécution...\n");
-
-    // Attendre la fin du thread de gestion des notifications (ceci ne sera jamais atteint dans cet exemple)
-    pthread_join(thread, NULL);
-
-    return 0;
+    
+    while (indice != numbloc && fichiers){
+        if (indice+1 == numbloc){
+            fich->suivant = fichiers->suivant;
+            fichiers->suivant = fich;
+        }
+        fichiers = fichiers->suivant;
+        indice++;
+    }
 }
-*/
 
-
+fichier* creer_fichier(int numeron, int id, char *nom, char *data){
+    fichier *fich = malloc(sizeof(fichiers));
+    fich->numero = numeron;
+    fich->id_proprietaire = id;
+    strcpy(fich->nom, nom);
+    strcpy(fich->data, data);
+    fich->suivant = NULL;
+    return fich;
+}
