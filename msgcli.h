@@ -46,7 +46,7 @@ msg_fichier* compose_msg_fichier(uint16_t entete, uint16_t numbloc, char *data);
 msg_fil * compose_msg_fil(const char * data, uint8_t codeReq, uint16_t id, uint16_t numfil, uint16_t nb);
 void send_empty_buffer(struct sockaddr_in6 servadrfichier, uint8_t codeReq, uint16_t id, int sock);
 mes_notification add_notif(mes_notification head, const char * pseudo, const char * data, uint16_t numfil);
-void free_notif(mes_notification head);
+void free_notif(mes_notification *head);
 void affich_notif(mes_notification head);
                     
 

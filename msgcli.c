@@ -73,13 +73,15 @@ mes_notification add_notif(mes_notification head, const char * pseudo, const cha
     return m;
 }
 
-void free_notif(mes_notification head){
+void free_notif(mes_notification *head){
     mes_notification suiv;
-    while(head != NULL){
-        suiv = head->suivant;
-        free(head);
-        head = suiv;
+    mes_notification curr = *head;
+    while(curr != NULL){
+        suiv = curr-> suivant;
+        free(curr);
+        curr = suiv;
     }
+    *head = NULL;
 }
 
 void affich_notif(mes_notification head){

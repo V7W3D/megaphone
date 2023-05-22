@@ -392,7 +392,6 @@ void telecharger_fichier(uint16_t f, const char *nom, const char *path){
 
 int main(){
     
-    struct sockaddr_in server_addr;
     struct timeval timeout; 
 
     sock = socket(PF_INET6, SOCK_DGRAM, 0);
@@ -503,7 +502,9 @@ menu:
                 break;
             case 7:
                 affich_notif(notifs);
-                free_notif(notifs);
+                if(notifs != NULL) {
+                    free_notif(&notifs);
+                }
                 break;
             default:
                 printf("codeReq erroné\n");
@@ -512,6 +513,6 @@ menu:
     }
 
 error:
-    printf("Une erreur est survenue lors de votre derière requête. Veuillez réessayer");
+    printf("Une erreur est survenue lors de votre derière requête. Veuillez réessayer\n");
     goto menu;
 }

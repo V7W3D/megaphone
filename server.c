@@ -24,7 +24,6 @@ int idFichier = 0;
 
 void * envoyer_notification(void* arg) {
     thread_arg  a = *(thread_arg *) arg;
-    
     int sock = socket(AF_INET6, SOCK_DGRAM, 0);
     struct sockaddr_in6 grsock;
     memset(&grsock, 0, sizeof(grsock));
@@ -37,22 +36,21 @@ void * envoyer_notification(void* arg) {
     notif->entete = entete;
     notif->numfil = a.numfil;
     fil * mon_fil = get_fil(mes_fils, a.numfil);
-    billet * mes_billets = mon_fil->billets;
-    billet * bp = NULL;
-    int fin = mes_billets->numero;
+    billet * bp;
+    int fin;
     int debut = 0;
     while (1) {
-        if(debut != 0) fin = debut;
+        bp = mon_fil->billets;
+        fin = bp->numero;
         sleep(10);
-        bp = mes_billets;
-        debut = bp->numero;
-        for(int i = fin;  i >= debut; i--){
+        for(int i = fin;  i > debut; i--){
             strcpy(notif->pseudo, bp->pseudo);
             strcpy(notif->data, bp->message);
             memcpy(buffer, notif, sizeof(notif_srv));
             sendto(sock, buffer, sizeof(notif_srv), 0, (struct sockaddr*)&grsock, sizeof(grsock));
             bp = bp->suivant;
         }
+        debut = fin;
     }
 }
 
@@ -366,13 +364,13 @@ msg_srv * poster_billet(uint16_t id, const char * buffer){
     strcpy(data_buf, mf->data);
     char * pseudo = get_user_pseudo(my_users, id);
     if(pseudo != NULL){
-        int n = add_new_billet(&mes_fils, mf->numfil, pseudo, data_buf);
+        int n = add_new_billet(&mes_fils, ntohs(mf->numfil), pseudo, data_buf);
         if(n < 0){
             free(mf);
             return erreur();
         }
         else{
-            if(mf->numfil == 0){
+            if(ntohs(mf->numfil) == 0){
                 pthread_t thread;
                 thread_arg * a = malloc(sizeof(thread_arg));
                 a->port = mes_fils->port;
