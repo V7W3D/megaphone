@@ -13,7 +13,7 @@ typedef struct {
     uint16_t numfil;
     uint16_t nb;
     uint8_t datalen;
-    uint8_t * data;
+    char data[256];
 } msg_fil;
 
 typedef struct {

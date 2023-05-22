@@ -11,7 +11,7 @@
 #include <net/if.h>
 
 
-#define BUF_SIZE 256
+#define BUF_SIZE 4096
 #define MAX_CLIENTS 2047 //le plus grand id représentable sur 11 bits = 2^11 - 1
 
 lusers my_users = NULL;
@@ -53,16 +53,19 @@ msg_srv * inscription(const char * buffer){
     uint16_t entete = compose_entete(1, id_u);
     id_u++;
     msg_srv * ms = compose_msg_srv(entete, 0, 0);
+    free(mi);
     return ms;
 }
 
 msg_srv * poster_billet(uint16_t id, const char * buffer){
     msg_fil * mf = malloc(sizeof(msg_fil));
     memcpy(mf, buffer, sizeof(msg_fil));
-    char data_buf[mf->datalen];
-    memcpy(data_buf, mf->data, mf->datalen);
-    int n = add_new_billet(mes_fils, mf->numfil, id, data_buf);
+    char data_buf[mf->datalen+1];
+    printf("%s\n", mf->data);
+    strcpy(data_buf, mf->data);
+    int n = add_new_billet(&mes_fils, mf->numfil, id, data_buf);
     if(n < 0){
+        free(mf);
         return erreur();
     }
     if(mf->numfil == 0){
@@ -74,6 +77,7 @@ msg_srv * poster_billet(uint16_t id, const char * buffer){
     }
     uint16_t entete = mf->entete;
     msg_srv * ms = compose_msg_srv(entete, n, 0);
+    free(mf);
     return ms;
 }
 
@@ -136,6 +140,8 @@ int main(){
         uint8_t codeReq = 0;
         uint16_t id = 0;
         extract_entete(e, &codeReq, &id);
+
+        printf("id : %d codeReq : %d\n", id, codeReq);
 
         char send_buffer[sizeof(msg_srv)];
         msg_srv * ms = NULL;

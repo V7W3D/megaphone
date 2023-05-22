@@ -10,7 +10,7 @@
 #include <pthread.h>
 
 extern char current_adr[INET6_ADDRSTRLEN];
-extern int f;
+extern uint16_t f;
 extern int port_multi;
 
 typedef struct billet{
@@ -40,9 +40,9 @@ typedef struct fil{
     struct fil * suivant; // pointeur vers le fil suivant
 } fil;
 
-fil * get_fil(fil * fils, int num_fil);
-fil * add_new_fil(fil *fils, int num_fil);
-int add_new_billet(fil *fils, int num_fil, int id_proprietaire, const char * message);
-char * add_new_abonne(fil *fils, int num_fil, uint16_t id);
+fil * get_fil(fil * fils, uint16_t num_fil);
+fil * add_new_fil(fil *fils, uint16_t num_fil);
+int add_new_billet(fil **fils, uint16_t num_fil, int id_proprietaire, const char * message);
+char * add_new_abonne(fil *fils, uint16_t num_fil, uint16_t id);
 
 #endif

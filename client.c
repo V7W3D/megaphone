@@ -85,10 +85,10 @@ int main(){
     servadr.sin6_port = htons(7777);
     inet_pton(AF_INET6, "::1", &servadr.sin6_addr);
     
-    msg_inscri * m = inscription("ahmed");
+    msg_fil * m = poster_billet(199, 0, "hello my name is ahmed");
 
-    char send_buffer[sizeof(msg_inscri)];
-    memcpy(send_buffer, m, sizeof(msg_inscri));
+    char send_buffer[sizeof(msg_fil)];
+    memcpy(send_buffer, m, sizeof(msg_fil));
 
     int ok = 1;
         if(setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &ok, sizeof(ok)) < 0) {
@@ -97,7 +97,7 @@ int main(){
         return 1;
     }
 
-    if (sendto(sock, send_buffer, sizeof(msg_inscri), 0, (struct sockaddr*)&servadr, sizeof(servadr)) < 0) {
+    if (sendto(sock, send_buffer, sizeof(msg_fil), 0, (struct sockaddr*)&servadr, sizeof(servadr)) < 0) {
         perror("Erreur lors de l'envoi du message");
         exit(EXIT_FAILURE);
     }
@@ -111,10 +111,12 @@ int main(){
         exit(EXIT_FAILURE);
     }
 
+    msg_srv * mf = malloc(sizeof(msg_srv));
+    memcpy(mf, recv_buffer, sizeof(msg_srv));
     uint16_t e = *((uint16_t*)recv_buffer);
     uint8_t codeReq = 0;
     uint16_t id = 0;
     extract_entete(e, &codeReq, &id);
 
-    printf("codeReq : %d id : %d\n", codeReq, id);    
+    printf("codeReq : %d id : %d f : %d\n", codeReq, id, ntohs(mf->numfil));    
 }
