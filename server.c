@@ -47,7 +47,6 @@ void * envoyer_notification(void* arg) {
         bp = mes_billets;
         debut = bp->numero;
         for(int i = fin;  i >= debut; i--){
-            printf("hello");
             strcpy(notif->pseudo, bp->pseudo);
             strcpy(notif->data, bp->message);
             memcpy(buffer, notif, sizeof(notif_srv));

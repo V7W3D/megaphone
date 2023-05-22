@@ -21,7 +21,7 @@
 int sock = 0;
 uint16_t id;
 struct sockaddr_in6 servadr;
-
+mes_notification notifs = NULL;
 
 void* recevoir_notification(void* arg){
     thread_arg a = *(thread_arg *) arg;
@@ -49,11 +49,10 @@ void* recevoir_notification(void* arg){
 
     notif_srv * notif = malloc(sizeof(notif_srv));
     char buffer[sizeof(notif_srv)];
-
     while(1){
         if (read(sockfd, buffer, sizeof(notif_srv)) < 0) return NULL;
         memcpy(notif, buffer, sizeof(notif_srv));
-        printf("file : %d pseudo : %s message : %s\n", notif->numfil, notif->pseudo, notif->data);
+        notifs = add_notif(notifs, notif->pseudo, notif->data, notif->numfil);
     }
 }
 
@@ -442,6 +441,7 @@ menu:
         printf("[1] Inscription\n");
         printf("[2] Poster un billet\n");
         printf("[4] Abonnement\n");
+        printf("[7] Notifications\n");
         printf("--------------------------\n");
         printf("codeReq : ");
         scanf("%d", &choix);
@@ -500,6 +500,10 @@ menu:
             case 5:
                 break;
             case 6:
+                break;
+            case 7:
+                affich_notif(notifs);
+                free_notif(notifs);
                 break;
             default:
                 printf("codeReq erroné\n");

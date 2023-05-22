@@ -63,3 +63,28 @@ void send_empty_buffer(struct sockaddr_in6 servadrfichier, uint8_t codeReq
         exit(EXIT_FAILURE);
     }
 }
+
+mes_notification add_notif(mes_notification head, const char * pseudo, const char * data, uint16_t numfil){
+    mes_notification m = malloc(sizeof(struct notification));
+    strcpy(m->pseudo, pseudo);
+    strcpy(m->data, data);
+    m->numfil = numfil;
+    m->suivant = head;
+    return m;
+}
+
+void free_notif(mes_notification head){
+    mes_notification suiv;
+    while(head != NULL){
+        suiv = head->suivant;
+        free(head);
+        head = suiv;
+    }
+}
+
+void affich_notif(mes_notification head){
+    while(head != NULL){
+        printf("file : %d pseudo : %s message : %s\n", head->numfil, head->pseudo, head->data);
+        head = head->suivant;
+    }
+}
