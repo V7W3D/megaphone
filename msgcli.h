@@ -16,7 +16,7 @@ typedef struct {
     uint16_t numfil;
     uint16_t nb;
     uint8_t datalen;
-    char *data;
+    char data[256];
 } msg_fil;
 
 typedef struct {
@@ -30,6 +30,13 @@ typedef struct{
     char data[512];
 } msg_fichier;
 
+struct notification {
+    char pseudo[10];
+    char data[20];
+    struct notification * suivant; 
+};
+
+typedef struct notification * mes_notification;
 
 uint16_t compose_entete(uint8_t codeReq, uint16_t id);
 void extract_entete(uint16_t e, uint8_t* codeReq, uint16_t* id);

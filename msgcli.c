@@ -26,18 +26,18 @@ msg_inscri * compose_msg_inscri(uint16_t entete, const char * pseudo){
 }
 
 msg_fil * compose_msg_fil(const char * data, uint8_t codeReq, uint16_t id, uint16_t numfil, uint16_t nb){
-    size_t data_size;
-    if (data) data_size = strlen(data) + 1;
-    else data_size = 0;
-    size_t message_size = sizeof(msg_fil) + data_size;
-    msg_fil * message = malloc(message_size);
+    size_t data_size = 0;
+    if(data != NULL){
+        data_size = strlen(data) + 1;
+    }
+    msg_fil * message = malloc(sizeof(msg_fil));
     message->entete = compose_entete(codeReq, id);
     message->numfil = htons(numfil);
     message->nb = htons(nb);
-    message->datalen = data_size;
-    message->data = (char*) (message + sizeof(msg_fil));
-    memcpy(message->data, data, data_size);
-
+    if(data != NULL){
+        message->datalen = data_size;
+        strcpy(message->data, data);
+    }
     return message;
 }
 
@@ -62,5 +62,4 @@ void send_empty_buffer(struct sockaddr_in6 servadrfichier, uint8_t codeReq
         perror("sendto()");
         exit(EXIT_FAILURE);
     }
-
 }

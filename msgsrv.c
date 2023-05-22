@@ -40,3 +40,12 @@ msg_srv *msg_erreur(){
 int get_allocated_port(int id){
     return PORT+id;
 }
+
+msg_srv_fil * compose_msg_srv_fil(uint16_t entete, uint16_t numfil, uint16_t nb, const char * adr){
+    msg_srv_fil * m = malloc(sizeof(msg_srv_fil));
+    m->entete = entete;
+    m->numfil = htons(numfil);
+    m->nb = htons(nb);
+    strcpy(m->adr, adr);
+    return m;
+}
