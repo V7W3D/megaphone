@@ -5,6 +5,8 @@
 #include <unistd.h>
 #include <string.h>
 #include <net/if.h>
+#include <sys/time.h>
+#include <errno.h>
 #include "user.h"
 #include "msgcli.h"
 #include "msgsrv.h"
@@ -420,64 +422,92 @@ int main(){
         return 1;
     }
 
-    msg_inscri * m = inscription("ahmed");
-
+    
     char inscri_buffer[sizeof(msg_inscri)];
-    memcpy(inscri_buffer, m, sizeof(msg_inscri));
-
-    if (sendto(sock, inscri_buffer, sizeof(msg_inscri), 0, (struct sockaddr*)&servadr, sizeof(servadr)) < 0) {
-        perror("Erreur lors de l'envoi du message");
-        exit(EXIT_FAILURE);
-    }
-
+    char send_buffer[sizeof(msg_fil)];
     char recv_buffer[sizeof(msg_srv_fil)];
-    memset(&servadr, 0, sizeof(servadr));
-    socklen_t recv_len = sizeof(servadr);
-
-    if (recvfrom(sock, recv_buffer, sizeof(msg_srv_fil), 0, (struct sockaddr*)&servadr, &recv_len) < 0) {
-        perror("Erreur lors de l'envoi du message");
-        exit(EXIT_FAILURE);
-    }
-
-    msg_srv * mf = malloc(sizeof(msg_srv_fil));
-    memcpy(mf, recv_buffer, sizeof(msg_srv_fil));
-    uint16_t e = *((uint16_t*)recv_buffer);
+    msg_srv * msf = malloc(sizeof(msg_srv_fil));
+    msg_inscri * mi;
+    msg_fil * mf;
+    int choix = 0;
     uint8_t codeReq = 0;
     uint16_t id = 0;
-    extract_entete(e, &codeReq, &id);
-    printf("codeReq : %d id : %d f : %d\n", codeReq, id, ntohs(mf->numfil));
+    uint16_t e = 0;
+    uint16_t numfil = 0;
+    char pseudo[11];
+    char message[256];
 
-    
-    msg_fil * mm = poster_billet(199, 0, "hello my name is ahmed");
+menu:
+    while(1){
+        printf("[1] Inscription\n");
+        printf("[2] Poster un billet\n");
+        printf("[4] Abonnement\n");
+        printf("--------------------------\n");
+        printf("codeReq : ");
+        scanf("%d", &choix);
 
-    char send_buffer[sizeof(msg_fil)];
-    memcpy(send_buffer, mm, sizeof(msg_fil));
-
-    if (sendto(sock, send_buffer, sizeof(msg_fil), 0, (struct sockaddr*)&servadr, sizeof(servadr)) < 0) {
-        perror("Erreur lors de l'envoi du message");
-        exit(EXIT_FAILURE);
-    }
-
-    memset(&servadr, 0, sizeof(servadr));
-
-    if (recvfrom(sock, recv_buffer, sizeof(msg_srv_fil), 0, (struct sockaddr*)&servadr, &recv_len) < 0) {
-        perror("Erreur lors de l'envoi du message");
-        exit(EXIT_FAILURE);
-    }
-
-    memcpy(mf, recv_buffer, sizeof(msg_srv_fil));
-    e = *((uint16_t*)recv_buffer);
-    extract_entete(e, &codeReq, &id);
-    printf("codeReq : %d id : %d f : %d\n", codeReq, id, ntohs(mf->numfil));
-}
-
-/*
-    if (recv_len < 0) {
-        if (errno == EWOULDBLOCK) {
-            printf("Socket receive timeout\n");
-        } else {
-            perror("Failed to receive data");
-            exit(EXIT_FAILURE);
+        switch (choix) {
+            case 1:
+                printf("Entrez un pseudo: ");
+                fscanf(stdin, "%10s", pseudo);
+                mi = inscription(pseudo);
+                memcpy(inscri_buffer, mi, sizeof(msg_inscri));
+                if (sendto(sock, inscri_buffer, sizeof(msg_inscri), 0, (struct sockaddr*)&servadr, sizeof(servadr)) < 0) goto error;
+                if(read(sock, recv_buffer, sizeof(msg_srv)) < 0) exit(EXIT_FAILURE);
+                memcpy(msf, inscri_buffer, sizeof(msg_srv));
+                e = *((uint16_t*)recv_buffer);
+                extract_entete(e, &codeReq, &id);
+                if(codeReq != 31) printf("Votre id est : %d\n", id);
+                else goto error;
+                break;
+            case 2:
+                printf("Entrez votre id : ");
+                scanf("%hd", &id);
+                printf("Entrez le numéro du fil sur lequel vous voulez poster (0 pour créer un nouveau fil): ");
+                scanf("%hd", &numfil);
+                printf("Votre message :");
+                fscanf(stdin, "%255s", message);
+                mf = poster_billet(id, numfil, message);
+                memcpy(send_buffer, mf, sizeof(msg_fil));
+                if (sendto(sock, send_buffer, sizeof(msg_fil), 0, (struct sockaddr*)&servadr, sizeof(servadr)) < 0) goto error;
+                if(read(sock, recv_buffer, sizeof(msg_srv)) < 0) exit(EXIT_FAILURE);
+                memcpy(msf, recv_buffer, sizeof(msg_srv));
+                e = *((uint16_t*)recv_buffer);
+                extract_entete(e, &codeReq, &id);
+                if(codeReq != 31) printf("Votre message a été posté\n");
+                else goto error;
+                break;
+            case 3:
+                break;
+            case 4:
+                printf("Entrez votre id : ");
+                scanf("%hd", &id);
+                printf("Entrez le numéro du fil auqel vous voulez vous abonner: ");
+                scanf("%hd", &numfil);
+                mf = demande_abonnement(id, numfil);
+                memcpy(send_buffer, mf, sizeof(msg_fil));
+                if (sendto(sock, send_buffer, sizeof(msg_fil), 0, (struct sockaddr*)&servadr, sizeof(servadr)) < 0) goto error;
+                if(read(sock, recv_buffer, sizeof(msg_srv_fil)) < 0) exit(EXIT_FAILURE);
+                memcpy(msf, recv_buffer, sizeof(msg_srv_fil));
+                e = *((uint16_t*)recv_buffer);
+                extract_entete(e, &codeReq, &id);
+                if(codeReq == 4){
+                    sabonner(recv_buffer);
+                    printf("Vous êtes désormais abonné au fil %d\n", ntohs(msf->numfil));
+                }
+                else goto error;
+                break;
+            case 5:
+                break;
+            case 6:
+                break;
+            default:
+                printf("codeReq erroné\n");
+                break;
         }
-    } 
-*/
+    }
+
+error:
+    printf("Une erreur est survenue lors de votre derière requête. Veuillez réessayer");
+    goto menu;
+}
