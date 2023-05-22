@@ -42,10 +42,13 @@ void * envoyer_notification(void* arg) {
         sleep(10);
         bp = mes_billets;
         debut = bp->numero;
-        for(int i = debut; debut > fin; i--){
+        for(int i = fin;  i >= debut; i--){
+            printf("hello");
             strcpy(notif->pseudo, bp->pseudo);
-            memcpy(notif->data, bp->message, 20*sizeof(char));
+            strcpy(notif->data, bp->message);
+            memcpy(buffer, notif, sizeof(notif_srv));
             sendto(sock, buffer, sizeof(notif_srv), 0, (struct sockaddr*)&grsock, sizeof(grsock));
+            bp = bp->suivant;
         }
     }
 }

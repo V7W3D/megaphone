@@ -85,21 +85,22 @@ int main(){
     servadr.sin6_family = AF_INET6;
     servadr.sin6_port = htons(7777);
     inet_pton(AF_INET6, "::1", &servadr.sin6_addr);
-    
-    msg_fil * m = demande_abonnement(199, 1);
-    //msg_fil * m = poster_billet(199, 0, "hello my name is ahmed");
-
-    char send_buffer[sizeof(msg_fil)];
-    memcpy(send_buffer, m, sizeof(msg_fil));
 
     int ok = 1;
-        if(setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &ok, sizeof(ok)) < 0) {
+    if(setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &ok, sizeof(ok)) < 0) {
         perror("echec de SO_REUSEADDR");
         close(sock);
         return 1;
     }
+    
 
-    if (sendto(sock, send_buffer, sizeof(msg_fil), 0, (struct sockaddr*)&servadr, sizeof(servadr)) < 0) {
+
+    msg_inscri * m = inscription("ahmed");
+
+    char inscri_buffer[sizeof(msg_inscri)];
+    memcpy(inscri_buffer, m, sizeof(msg_inscri));
+
+    if (sendto(sock, inscri_buffer, sizeof(msg_inscri), 0, (struct sockaddr*)&servadr, sizeof(servadr)) < 0) {
         perror("Erreur lors de l'envoi du message");
         exit(EXIT_FAILURE);
     }
@@ -120,7 +121,52 @@ int main(){
     uint8_t codeReq = 0;
     uint16_t id = 0;
     extract_entete(e, &codeReq, &id);
-    printf("codeReq : %d id : %d f : %d\n", codeReq, id, ntohs(mf->numfil)); 
+    printf("codeReq : %d id : %d f : %d\n", codeReq, id, ntohs(mf->numfil));
+
+    
+    msg_fil * mm = poster_billet(199, 0, "hello my name is ahmed");
+
+    char send_buffer[sizeof(msg_fil)];
+    memcpy(send_buffer, mm, sizeof(msg_fil));
+
+    if (sendto(sock, send_buffer, sizeof(msg_fil), 0, (struct sockaddr*)&servadr, sizeof(servadr)) < 0) {
+        perror("Erreur lors de l'envoi du message");
+        exit(EXIT_FAILURE);
+    }
+
+    memset(&servadr, 0, sizeof(servadr));
+
+    if (recvfrom(sock, recv_buffer, sizeof(msg_srv_fil), 0, (struct sockaddr*)&servadr, &recv_len) < 0) {
+        perror("Erreur lors de l'envoi du message");
+        exit(EXIT_FAILURE);
+    }
+
+    memcpy(mf, recv_buffer, sizeof(msg_srv_fil));
+    e = *((uint16_t*)recv_buffer);
+    extract_entete(e, &codeReq, &id);
+    printf("codeReq : %d id : %d f : %d\n", codeReq, id, ntohs(mf->numfil));
+    
+    
+    mm = demande_abonnement(199, 1);
+
+    memcpy(send_buffer, mm, sizeof(msg_fil));
+
+    if (sendto(sock, send_buffer, sizeof(msg_fil), 0, (struct sockaddr*)&servadr, sizeof(servadr)) < 0) {
+        perror("Erreur lors de l'envoi du message");
+        exit(EXIT_FAILURE);
+    }
+
+    memset(&servadr, 0, sizeof(servadr));
+
+    if (recvfrom(sock, recv_buffer, sizeof(msg_srv_fil), 0, (struct sockaddr*)&servadr, &recv_len) < 0) {
+        perror("Erreur lors de l'envoi du message");
+        exit(EXIT_FAILURE);
+    }
+
+    memcpy(mf, recv_buffer, sizeof(msg_srv_fil));
+    e = *((uint16_t*)recv_buffer);
+    extract_entete(e, &codeReq, &id);
+    printf("codeReq : %d id : %d f : %d\n", codeReq, id, ntohs(mf->numfil));
     
     if(codeReq == 4){ 
         sabonner(recv_buffer);

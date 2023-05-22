@@ -57,6 +57,9 @@ int add_new_billet(fil **fils, uint16_t num_fil, const char * pseudo, const char
         strcpy(new_billet->message, message);
         fil * f = get_fil(*fils, num_fil);
         if(f != NULL){
+            if(f->billets != NULL)
+                new_billet->numero = f->billets->numero + 1;
+            else new_billet->numero = 1;
             new_billet->suivant = f->billets;
             f->billets = new_billet;
             return f->numero;
