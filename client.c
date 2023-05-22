@@ -10,6 +10,8 @@
 #include "msgsrv.h"
 #include "fil.h"
 
+#define TIMEOUT 2
+
 #define EMPTY(f) *f = '\0'
 
 #define SIZE_BLOC 512
@@ -388,10 +390,22 @@ void telecharger_fichier(uint16_t f, const char *nom, const char *path){
 }
 
 int main(){
+    
+    struct sockaddr_in server_addr;
+    struct timeval timeout; 
+
     sock = socket(PF_INET6, SOCK_DGRAM, 0);
     if(sock < 0) {
         perror("socket()");
         return -1;
+    }
+
+    timeout.tv_sec = TIMEOUT; 
+    timeout.tv_usec = 0; 
+
+    if (setsockopt(sock, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout)) < 0) {
+        perror("Failed to set socket receive timeout");
+        exit(EXIT_FAILURE);
     }
 
     memset(&servadr, 0, sizeof(servadr));
@@ -425,7 +439,6 @@ int main(){
         exit(EXIT_FAILURE);
     }
 
-
     msg_srv * mf = malloc(sizeof(msg_srv_fil));
     memcpy(mf, recv_buffer, sizeof(msg_srv_fil));
     uint16_t e = *((uint16_t*)recv_buffer);
@@ -456,7 +469,15 @@ int main(){
     e = *((uint16_t*)recv_buffer);
     extract_entete(e, &codeReq, &id);
     printf("codeReq : %d id : %d f : %d\n", codeReq, id, ntohs(mf->numfil));
-
-    //ajout_fichier(1, "aaaa", "./user.c");
-    telecharger_fichier(1, "aaaa", ".");
 }
+
+/*
+    if (recv_len < 0) {
+        if (errno == EWOULDBLOCK) {
+            printf("Socket receive timeout\n");
+        } else {
+            perror("Failed to receive data");
+            exit(EXIT_FAILURE);
+        }
+    } 
+*/

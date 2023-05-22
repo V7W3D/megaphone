@@ -407,8 +407,6 @@ msg_srv_fil * abonnement(uint16_t id, const char * buffer){
     return NULL;
 }
 
-
-
 int main(){
 
     my_users = malloc(sizeof(user));
@@ -425,13 +423,13 @@ int main(){
         exit(-1);
     }
 
-    struct sockaddr_in6 cliadr;
-    memset(&cliadr, 0, sizeof(cliadr));
-    cliadr.sin6_family = AF_INET6;
-    cliadr.sin6_addr = in6addr_any;
-    cliadr.sin6_port = htons(7777);
+    struct sockaddr_in6 srvadr;
+    memset(&srvadr, 0, sizeof(srvadr));
+    srvadr.sin6_family = AF_INET6;
+    srvadr.sin6_addr = in6addr_any;
+    srvadr.sin6_port = htons(7777);
 
-    if (bind(sockfd, (struct sockaddr *)&cliadr, sizeof(cliadr)) < 0) return -1;
+    if (bind(sockfd, (struct sockaddr *)&srvadr, sizeof(srvadr)) < 0) return -1;
 
     while (1) {
         struct sockaddr_in6 adrcli;
@@ -446,11 +444,6 @@ int main(){
             perror("Erreur lors de la réception du message");
             continue;
         }
-
-        //Récupération de l'adresse IP du client
-        char ipcli[INET6_ADDRSTRLEN];
-        inet_ntop(PF_INET6, &(adrcli.sin6_addr), ipcli, INET6_ADDRSTRLEN);
-
         //Lecture de l'entête
         uint16_t e = *((uint16_t*)recv_buffer);
         uint8_t codeReq = 0;
@@ -462,13 +455,12 @@ int main(){
         char send_buffer[sizeof(msg_srv)];
         msg_srv * ms = NULL;
         msg_srv_fil * ms_a = NULL;
-        ssize_t send_len = 0; 
 
         switch(codeReq){
             case 1:
                 ms = inscription(recv_buffer);
                 memcpy(send_buffer, ms, sizeof(msg_srv));
-                send_len = sendto(sockfd, send_buffer, sizeof(msg_srv), 0, (struct sockaddr*)&adrcli, lencli);
+                sendto(sockfd, send_buffer, sizeof(msg_srv), 0, (struct sockaddr*)&adrcli, lencli);
                 break;
             case 2:
                 ms = poster_billet(id, recv_buffer);
@@ -476,17 +468,20 @@ int main(){
                     ms = erreur();
                 }
                 memcpy(send_buffer, ms, sizeof(msg_srv));
-                send_len = sendto(sockfd, send_buffer, sizeof(msg_srv), 0, (struct sockaddr*)&adrcli, lencli);
+                sendto(sockfd, send_buffer, sizeof(msg_srv), 0, (struct sockaddr*)&adrcli, lencli);
+                break;
+            case 3:
+                dernier_n_billets(recv_buffer, id, adrcli);
                 break;
             case 4:
                 ms_a = abonnement(id, recv_buffer);
                 if(ms_a != NULL){
                     memcpy(send_buffer, ms_a, sizeof(msg_srv_fil));
-                    send_len = sendto(sockfd, send_buffer, sizeof(msg_srv_fil), 0, (struct sockaddr*)&adrcli, lencli);
+                    sendto(sockfd, send_buffer, sizeof(msg_srv_fil), 0, (struct sockaddr*)&adrcli, lencli);
                 }
                 else{ 
                     memcpy(send_buffer, erreur(), sizeof(msg_srv));
-                    send_len = sendto(sockfd, send_buffer, sizeof(msg_srv), 0, (struct sockaddr*)&adrcli, lencli);
+                    sendto(sockfd, send_buffer, sizeof(msg_srv), 0, (struct sockaddr*)&adrcli, lencli);
                 }
                 break;
             case 5:
