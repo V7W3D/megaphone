@@ -92,21 +92,6 @@ void dernier_n_billets(uint16_t f, uint16_t nb){
     recv_dernier_n_billets(nb_real_billets);
 }
 
-void send_empty_buffer(struct sockaddr_in6 servadrfichier){
-    int len = sizeof(msg_fichier);
-    msg_fichier *msg = compose_msg_fichier(compose_entete(5, id), htons(-1), "");
-    char send_buffer[len];
-    memcpy(send_buffer, msg, len);
-
-        //envoyer la requete au serveur
-    if (sendto(sock, send_buffer, len, 0,
-                    (struct sockaddr*)&servadrfichier, sizeof(servadrfichier)) < 0){
-        perror("sendto()");
-        exit(EXIT_FAILURE);
-    }
-
-}
-
 void ajout_fichier_aux(int port, FILE *fichier){
 
     struct sockaddr_in6 servadrfichier;
@@ -136,7 +121,7 @@ void ajout_fichier_aux(int port, FILE *fichier){
         }
 
         if (feof(fichier) && strlen(buffer)>=SIZE_BLOC) 
-            send_empty_buffer(servadrfichier);
+            send_empty_buffer(servadrfichier, 5, id, sock);
 
         numBloc++;
     }
@@ -183,6 +168,28 @@ void ajout_fichier(uint16_t f, const char *nom, const char *path){
     ajout_fichier_aux(rep_srv->nb, fichier);
     
     fclose(fichier);
+}
+
+void telecharger_fichier_aux(){
+
+}
+
+//nom du fichier, et path est le chemin ou enregistrer le fichier
+void telecharger_fichier(uint16_t f, const char *nom, const char *path){
+    msg_fil * msg = compose_msg_fil(nom, 6, id, f, get_allocated_port(id));
+
+    int len = sizeof(msg_fil) + strlen(nom);
+
+    char send_buffer[len];
+    memcpy(send_buffer, msg, len);
+    memcpy(send_buffer+sizeof(msg_fil), nom, strlen(nom));
+
+    //envoyer la requete au serveur
+    if (sendto(sock, send_buffer, len, 0,
+                (struct sockaddr*)&servadr, sizeof(servadr)) < 0){
+        perror("sendto()");
+        exit(EXIT_FAILURE);
+    }     
 }
 
 msg_inscri * inscription(const char * pseudo){

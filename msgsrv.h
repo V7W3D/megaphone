@@ -2,7 +2,7 @@
 #define MSGSRV_H
 
 #include <stdint.h>
-#define BUF_SIZE 256
+#define BUF_SIZE 512
 #define PORT 1024
 
 
@@ -25,5 +25,6 @@ msg_dernier_billets * compose_msg_dernier_billet(uint16_t numfil
                     , char *origin, char *pseudo, uint8_t datalen, char *data);
 msg_srv *msg_erreur();
 int get_allocated_port(int id);
+
 
 #endif

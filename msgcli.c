@@ -3,8 +3,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <arpa/inet.h>
-#include <sys/socket.h>
 #include <unistd.h>
 #include <string.h>
 
@@ -49,4 +47,20 @@ msg_fichier* compose_msg_fichier(uint16_t entete, uint16_t numbloc, char *data){
     msg->numbloc = numbloc;
     strcpy(msg->data, data);
     return msg;
+}
+
+void send_empty_buffer(struct sockaddr_in6 servadrfichier, uint8_t codeReq
+                , uint16_t id, int sock){
+    int len = sizeof(msg_fichier);
+    msg_fichier *msg = compose_msg_fichier(compose_entete(codeReq, id), htons(-1), "");
+    char send_buffer[len];
+    memcpy(send_buffer, msg, len);
+
+        //envoyer la requete au serveur
+    if (sendto(sock, send_buffer, len, 0,
+                    (struct sockaddr*)&servadrfichier, sizeof(servadrfichier)) < 0){
+        perror("sendto()");
+        exit(EXIT_FAILURE);
+    }
+
 }

@@ -10,7 +10,6 @@
 #include "msgsrv.h"
 #include "fil.h"
 
-#define BUF_SIZE 256
 #define MAX_CLIENTS 2047 //le plus grand id représentable sur 11 bits = 2^11 - 1
 
 lusers my_users = NULL;
@@ -58,8 +57,6 @@ void envoyer_billets(int num_fil, int nb, struct sockaddr_in6 adrcli){
 
         char send_buffer[sizeof(msg_dernier_billets)];
         memcpy(send_buffer, msg, sizeof(msg_dernier_billets));
-
-        printf("%d,%d\n",fil->id_proprietaire,billets->id_proprietaire);
 
         if (sendto(sockfd, send_buffer, sizeof(msg_dernier_billets), 0,
                     (struct sockaddr *)&adrcli, sizeof(adrcli)) < 0){
@@ -164,44 +161,108 @@ void ajout_fichier_aux(int id, int port
     close(sock_fichier);
 }
 
-void ajout_fichier(const char *buffer, uint16_t id,
-                                     struct sockaddr_in6 adrcli){
+msg_fil *init_reponse_client(const char *buffer, uint16_t id,
+                                     struct sockaddr_in6 adrcli, int mask){
     msg_fil *msg = malloc(sizeof(msg_fil));
     memcpy(msg, buffer, sizeof(msg_fil));
     msg->data = malloc(sizeof(msg->datalen));
-    strncpy(msg->data, buffer+sizeof(msg_fil), msg->datalen);
+    memcpy(msg->data, buffer+sizeof(msg_fil), msg->datalen);
     *(msg->data + msg->datalen) = '\0';
-
-    printf("%s\n", msg->data);
-    //envoie du port au client
-    pthread_mutex_lock(&verrou);
-    int port = htons(get_allocated_port(id));
-    pthread_mutex_unlock(&verrou);
-
-    msg_srv *resp = compose_msg_srv(compose_entete(5, id)
-                        , ntohs(msg->numfil), ntohs(port));
-
-    char send_buffer[sizeof(msg_srv)];
-    memcpy(send_buffer, resp, sizeof(send_buffer));
 
     fil *fils;
 
     if(!(fils=get_fil(mes_fils, ntohs(msg->numfil))) 
         || !est_inscrit(my_users, id)
-        || exsist_fichier(fils, msg->data)){
+        || (mask ^ exsist_fichier(fils, msg->data))){
         envoyer_erreur(adrcli);
-        return;
+        return NULL;
     }
+    return msg;
+}
+
+void init_reponse_serveur(uint16_t entete, int id, int arg1, int arg2
+                                , struct sockaddr_in6 adrcli){
+    msg_srv *resp = compose_msg_srv(compose_entete(5, id)
+                        , arg1, arg2);
+
+    char send_buffer[sizeof(msg_srv)];
+    memcpy(send_buffer, resp, sizeof(send_buffer));
 
     if (sendto(sockfd, send_buffer, sizeof(msg_srv), 0,
             (struct sockaddr *)&adrcli, sizeof(adrcli)) < 0){
         perror("sendTo() => dernier_n_billets ");
         exit(EXIT_FAILURE);
     }
+}
+
+void ajout_fichier(const char *buffer, uint16_t id,
+                                     struct sockaddr_in6 adrcli){
+    msg_fil *msg = init_reponse_client(buffer, id, adrcli, 0);
+
+    if (!msg) return;
+
+    //envoie du port au client
+    pthread_mutex_lock(&verrou);
+    int port = htons(get_allocated_port(id));
+    pthread_mutex_unlock(&verrou);
+
+    init_reponse_serveur(compose_entete(5, id), id, ntohs(msg->numfil)
+        , ntohs(port), adrcli);
 
     ajout_fichier_aux(id, port, adrcli, ntohs(msg->numfil), msg->data);
 
 }
+
+void telecharger_fichier_aux(uint16_t entete, uint16_t id, int port, int f, char *nom_fichier){
+    //on recupere le fichier a envoyer
+    fichier *fich = get_fichier(get_fil(mes_fils, f), nom_fichier);
+
+    struct sockaddr_in6 adrcli_fichier;
+    memset(&adrcli_fichier, 0, sizeof(adrcli_fichier));
+    adrcli_fichier.sin6_port = port;
+    adrcli_fichier.sin6_addr = in6addr_any;
+
+    data_fichier *data = fich->data;
+
+    int numBloc = 0;
+
+    while (data){
+
+        msg_fichier *msg = compose_msg_fichier(entete, htons(numBloc), data->data);
+
+        int len = sizeof(msg);
+        char send_buffer[len];
+        memcpy(send_buffer, msg, len);
+
+        if (sendto(sockfd, send_buffer, len, 0,
+                    (struct sockaddr*)&adrcli_fichier, sizeof(adrcli_fichier)) < 0){
+            perror("sendto() => telecharger_fichier_aux ");
+            exit(EXIT_FAILURE);
+        }
+
+        data = data->suivant;
+
+        if (!data) send_empty_buffer(adrcli_fichier, 6, id, sockfd);
+
+        numBloc++;
+    }
+
+}
+
+void telecharger_fichier(const char *buffer, uint16_t id,
+                                     struct sockaddr_in6 adrcli){
+    msg_fil *msg = init_reponse_client(buffer, id, adrcli, 1);
+
+    if (!msg) return;
+
+    int port = msg->nb;
+    uint16_t entete = compose_entete(6, id);
+
+    init_reponse_serveur(entete, id, ntohs(msg->numfil), ntohs(port),
+                                adrcli);
+
+    telecharger_fichier_aux(entete, id, port, ntohs(msg->numfil), msg->data);
+}   
 
 msg_srv * inscription(const char * buffer){
     msg_inscri * mi = malloc(sizeof(msg_inscri));

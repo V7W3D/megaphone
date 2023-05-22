@@ -46,5 +46,6 @@ int nb_msgs_total_fil(fil*);
 void ajout_bloc_fichier(int numbloc, char *bloc, fichier *fich);
 fichier* creer_fichier(fil *mes_fils, int f, int numeron, int id, char *nom);
 int exsist_fichier(fil *f, char *nom);
+fichier *get_fichier(fil *f, char *nom);
 
 #endif

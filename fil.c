@@ -20,6 +20,8 @@ Chaque fil de discussions est constitué de:
 >Taille d'un fichiers < 33.5 Mo
 */
 
+
+
 fil * get_fil(fil * fils, int num_fil){
     while(fils != NULL){
         if(fils->numero == num_fil) return fils;
@@ -138,11 +140,15 @@ fichier* creer_fichier(fil *mes_fils, int f,int numeron, int id, char *nom){
     return fich;
 }
 
-int exsist_fichier(fil *f, char *nom){
+fichier *get_fichier(fil *f, char *nom){
     fichier *fichs = f->fichiers;
     while (fichs){
-        if (strcmp(fichs->nom, nom) == 0) return 1;
+        if (strcmp(fichs->nom, nom) == 0) return fichs;
         fichs = fichs->suivant;
     }
-    return 0;
+    return NULL;
+}
+
+int exsist_fichier(fil *f, char *nom){
+    return get_fichier(f, nom) != NULL;
 }
