@@ -21,6 +21,13 @@ typedef struct {
     char pseudo[10];
 } msg_inscri;
 
+struct notification {
+    char pseudo[10];
+    char data[20];
+    struct notification * suivant; 
+};
+
+typedef struct notification * mes_notification;
 
 uint16_t compose_entete(uint8_t codeReq, uint16_t id);
 void extract_entete(uint16_t e, uint8_t* codeReq, uint16_t* id);

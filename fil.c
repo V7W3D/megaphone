@@ -10,7 +10,7 @@
 #define LEN_FILE 33554432 // 32 Mo
 
 char current_adr[INET6_ADDRSTRLEN] = "ff02::1";
-uint16_t f = 0;
+uint16_t f = 1;
 int port_multi = 4444;
 
 void next_adr_multi() {
@@ -49,10 +49,10 @@ fil * add_new_fil(fil *fils, uint16_t num_fil){
 }
 
 // Inserer un nouveau billet dans la liste billets d'un fil donné, retoune 0 si le billet a été ajouté -1 sinon
-int add_new_billet(fil **fils, uint16_t num_fil, int id_proprietaire, const char * message){
+int add_new_billet(fil **fils, uint16_t num_fil, const char * pseudo, const char * message){
     if(num_fil != 0){
         billet *new_billet = malloc(sizeof(billet));
-        new_billet->id_proprietaire = id_proprietaire;
+        strcpy(new_billet->pseudo, pseudo);
         new_billet->message = malloc(sizeof(message));
         strcpy(new_billet->message, message);
         fil * f = get_fil(*fils, num_fil);
@@ -65,7 +65,7 @@ int add_new_billet(fil **fils, uint16_t num_fil, int id_proprietaire, const char
     }
     *fils = add_new_fil(*fils, f);
     f += 1;
-    return add_new_billet(fils, (*fils)->numero, id_proprietaire, message);
+    return add_new_billet(fils, (*fils)->numero, pseudo, message);
 }
 
 char * add_new_abonne(fil *fils, uint16_t num_fil, uint16_t id){

@@ -15,7 +15,7 @@ extern int port_multi;
 
 typedef struct billet{
     int numero; // numéro du billet
-    int id_proprietaire; // id de l'auteur
+    char pseudo[10]; // id de l'auteur
     char * message; // message du billet < 255
     struct billet *suivant; // pointeur vers le billet suivant
 } billet;
@@ -42,7 +42,7 @@ typedef struct fil{
 
 fil * get_fil(fil * fils, uint16_t num_fil);
 fil * add_new_fil(fil *fils, uint16_t num_fil);
-int add_new_billet(fil **fils, uint16_t num_fil, int id_proprietaire, const char * message);
+int add_new_billet(fil **fils, uint16_t num_fil, const char * pseudo, const char * message);
 char * add_new_abonne(fil *fils, uint16_t num_fil, uint16_t id);
 
 #endif

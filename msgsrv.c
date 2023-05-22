@@ -22,6 +22,7 @@ msg_srv_fil * compose_msg_srv_fil(uint16_t entete, uint16_t numfil, uint16_t nb,
     m->entete = entete;
     m->numfil = htons(numfil);
     m->nb = htons(nb);
-    inet_pton(AF_INET6, adr, m->adr);
+    strcpy(m->adr, adr);
+    printf("%s\n", m->adr);
     return m;
 }

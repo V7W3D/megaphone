@@ -19,17 +19,34 @@ fil * mes_fils = NULL;
 uint16_t id_u = 199;
 
 void * envoyer_notification(void* arg) {
-    thread_arg * a = (thread_arg *) arg;
+    thread_arg  a = *(thread_arg *) arg;
+    
     int sock = socket(AF_INET6, SOCK_DGRAM, 0);
     struct sockaddr_in6 grsock;
     memset(&grsock, 0, sizeof(grsock));
     grsock.sin6_family = AF_INET6;
-    inet_pton(AF_INET6, a->adr, &grsock.sin6_addr);
-    grsock.sin6_port = htons(a->port);
-    char buf[10] = "hello";
+    inet_pton(AF_INET6, a.adr, &grsock.sin6_addr);
+    grsock.sin6_port = htons(a.port);
+    notif_srv * notif = malloc(sizeof(notif_srv));
+    char buffer[sizeof(notif_srv)];
+    uint16_t entete = compose_entete(4, 0);
+    notif->entete = entete;
+    notif->numfil = a.numfil;
+    fil * mon_fil = get_fil(mes_fils, a.numfil);
+    billet * mes_billets = mon_fil->billets;
+    billet * bp = NULL;
+    int fin = mes_billets->numero;
+    int debut = 0;
     while (1) {
+        if(debut != 0) fin = debut;
         sleep(10);
-        sendto(sock, buf, strlen(buf), 0, (struct sockaddr*)&grsock, sizeof(grsock));
+        bp = mes_billets;
+        debut = bp->numero;
+        for(int i = debut; debut > fin; i--){
+            strcpy(notif->pseudo, bp->pseudo);
+            memcpy(notif->data, bp->message, 20*sizeof(char));
+            sendto(sock, buffer, sizeof(notif_srv), 0, (struct sockaddr*)&grsock, sizeof(grsock));
+        }
     }
 }
 
@@ -63,34 +80,46 @@ msg_srv * poster_billet(uint16_t id, const char * buffer){
     char data_buf[mf->datalen+1];
     printf("%s\n", mf->data);
     strcpy(data_buf, mf->data);
-    int n = add_new_billet(&mes_fils, mf->numfil, id, data_buf);
-    if(n < 0){
-        free(mf);
-        return erreur();
+    char * pseudo = get_user_pseudo(my_users, id);
+    if(pseudo != NULL){
+        int n = add_new_billet(&mes_fils, mf->numfil, pseudo, data_buf);
+        if(n < 0){
+            free(mf);
+            return erreur();
+        }
+        else{
+            if(mf->numfil == 0){
+                pthread_t thread;
+                thread_arg * a = malloc(sizeof(thread_arg));
+                a->port = mes_fils->port;
+                a->numfil = n;
+                strcpy(a->adr, mes_fils->adresse);
+                pthread_create(&thread, NULL, envoyer_notification, a);
+            }
+            uint16_t entete = mf->entete;
+            msg_srv * ms = compose_msg_srv(entete, n, 0);
+            free(mf);
+            return ms;
+        }
     }
-    if(mf->numfil == 0){
-        pthread_t thread;
-        thread_arg * a = malloc(sizeof(thread_arg));
-        a->port = mes_fils->port;
-        a->adr = mes_fils->adresse;
-        pthread_create(&thread, NULL, envoyer_notification, &a);
-    }
-    uint16_t entete = mf->entete;
-    msg_srv * ms = compose_msg_srv(entete, n, 0);
     free(mf);
-    return ms;
+    return NULL;
 }
 
 msg_srv_fil * abonnement(uint16_t id, const char * buffer){
     msg_fil * mf = malloc(sizeof(msg_fil));
     memcpy(mf, buffer, sizeof(msg_fil));
-    char * adr = add_new_abonne(mes_fils, mf->numfil, id);
-    if(adr != NULL){
-        return NULL;
+    fil * fil = get_fil(mes_fils, ntohs(mf->numfil));
+    if(fil != NULL){
+        char * a =  add_new_abonne(mes_fils, fil->numero, id);
+        if(a == NULL) return NULL;
+        uint16_t entete = mf->entete;
+        msg_srv_fil * ms = compose_msg_srv_fil(entete, fil->numero, fil->port, a);
+        free(mf);
+        return ms;
     }
-    uint16_t entete = mf->entete;
-    msg_srv_fil * ms = compose_msg_srv_fil(entete, mf->numfil, 7777, adr);
-    return ms;
+    free(mf);
+    return NULL;
 }
 
 int main(){
@@ -156,14 +185,21 @@ int main(){
                 break;
             case 2:
                 ms = poster_billet(id, recv_buffer);
+                if(ms == NULL) ms = erreur();
                 memcpy(send_buffer, ms, sizeof(msg_srv));
                 send_len = sendto(sockfd, send_buffer, sizeof(msg_srv), 0, (struct sockaddr*)&adrcli, lencli);
+                break;
             case 4:
                 ms_a = abonnement(id, recv_buffer);
-                if(ms_a != NULL)
+                if(ms_a != NULL){
                     memcpy(send_buffer, ms_a, sizeof(msg_srv_fil));
-                else memcpy(send_buffer, erreur(), sizeof(msg_srv));
-                send_len = sendto(sockfd, send_buffer, sizeof(msg_srv), 0, (struct sockaddr*)&adrcli, lencli);
+                    send_len = sendto(sockfd, send_buffer, sizeof(msg_srv_fil), 0, (struct sockaddr*)&adrcli, lencli);
+                }
+                else{ 
+                    memcpy(send_buffer, erreur(), sizeof(msg_srv));
+                    send_len = sendto(sockfd, send_buffer, sizeof(msg_srv), 0, (struct sockaddr*)&adrcli, lencli);
+                }
+                break;
             default:
                 break;
         }
