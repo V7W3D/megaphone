@@ -110,23 +110,27 @@ int nb_msgs_total_fil(fil* fils){
 void ajout_bloc_fichier(int numbloc, char *bloc, fichier *fich){
     data_fichier *data = malloc(sizeof(data_fichier));
     strcpy(data->data, bloc);
+    int min = (strlen(bloc) > 512) ? 512 : strlen(bloc);
+    SET_END_AT(data->data, min);
     data->suivant = NULL;
     int indice = 1;
 
     if (numbloc == 1){
+        data->suivant = fich->data;
         fich->data = data;
+        return;
     }
 
     data_fichier *first_bloc = fich->data;
     
-    while (indice != numbloc && first_bloc){
-        if (indice+1 == numbloc){
-            data->suivant = first_bloc->suivant;
-            first_bloc->suivant = data;
-        }
+    while (indice+1 != numbloc){
         first_bloc = first_bloc->suivant;
         indice++;
     }
+
+    data->suivant = first_bloc->suivant;
+    first_bloc->suivant = data;
+
 }
 
 fichier* creer_fichier(fil *mes_fils, int f,int numeron, int id, char *nom){

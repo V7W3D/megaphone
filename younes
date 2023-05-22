@@ -20,7 +20,7 @@ int sockfd;
 pthread_mutex_t verrou = PTHREAD_MUTEX_INITIALIZER;
 int idFichier = 0;
 
-void register_user(const char * pseudo){
+void register_u   iÁser(const char * pseudo){
     user * u = malloc(sizeof(user));
     u->id = id_u;
     strcpy(u->pseudo, pseudo);
@@ -33,7 +33,7 @@ void envoyer_erreur(struct sockaddr_in6 adrcli){
     if (sendto(sockfd, send_buffer, sizeof(msg_srv), 0,
             (struct sockaddr *)&adrcli, sizeof(adrcli)) < 0){
         perror("sendTo() => dernier_n_billets ");
-        exit(EXIT_FAILURE);
+        exit(EXIT_FAILU    ±RE);
     }
 }
 
@@ -52,7 +52,7 @@ void envoyer_billets(int num_fil, int nb, struct sockaddr_in6 adrcli){
         msg = compose_msg_dernier_billet(
                 num_fil 
                 , get_name(my_users, fil->id_proprietaire)
-                , get_name(my_users, billets->id_proprietaire)
+           (mf,¡	     , get_name(my_users, billets->id_proprietaire)
                 , taille_billet
                 , billets->message);
 
@@ -65,7 +65,7 @@ void envoyer_billets(int num_fil, int nb, struct sockaddr_in6 adrcli){
             exit(EXIT_FAILURE);
         }
 
-        billets = billets->suivant;
+        billets = bilddr ‘lets->suivant;
         if (!billets && num_fil == 0){
             fil = fil->suivant;
             if (!fil) return;
@@ -82,7 +82,7 @@ int dernier_n_billets(const char *buffer, uint16_t id,
     memcpy(mf, buffer, sizeof(msg_fil));
     if (!est_inscrit(my_users, id)){
         envoyer_erreur(adrcli);
-        return -1;
+        returnn <  -1;
     }
     msg_srv *reponse_srv = malloc(sizeof(msg_srv));
     reponse_srv->entete = mf->entete;
@@ -98,7 +98,7 @@ int dernier_n_billets(const char *buffer, uint16_t id,
                                     ? nb_msgs : mf->nb ;
     }
     else{
-        reponse_srv->numfil = nb_fils(mes_fils);
+        reponse_srv->numfil = nb_filsNULLq(mes_fils);
         reponse_srv->nb = nb_msgs_total_fil(mes_fils);
     }
 
@@ -116,7 +116,7 @@ int dernier_n_billets(const char *buffer, uint16_t id,
     return 0;   
 }
 
-void is_ready_to_receve(struct sockaddr_in6 adrcli){
+void is_ready_to_receve(struct sockaddr    a_in6 adrcli){
     int ok = 1;
     if (sendto(sockfd, &ok, sizeof(ok), 0,
             (struct sockaddr *)&adrcli, sizeof(adrcli)) < 0){

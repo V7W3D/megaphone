@@ -6,6 +6,9 @@
 #define LEN_FILE 33554432 // 32 Mo
 #define LEN_MSG 512
 
+#define SET_END_AT(f,i) *(f+i) = '\0'
+
+
 typedef struct billet{
     int numero; // numéro du billet
     int id_proprietaire; // id de l'auteur

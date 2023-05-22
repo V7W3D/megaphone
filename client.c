@@ -65,6 +65,7 @@ void dernier_n_billets(uint16_t f, uint16_t nb){
     char send_buffer[sizeof(msg_fil)];
     memcpy(send_buffer, msg, sizeof(msg_fil));
 
+    printf("Envoie de la requete au serveur...\n");
     //envoyer la requete au serveur
     if (sendto(sock, send_buffer, sizeof(msg_fil), 0,
                 (struct sockaddr*)&servadr, sizeof(servadr)) < 0){
@@ -87,11 +88,23 @@ void dernier_n_billets(uint16_t f, uint16_t nb){
         return;
     }
 
+    printf("OK du serveur\n");
+
     uint16_t nb_real_billets = rep_srv->nb;
 
     printf("Nombre de billets : %d\n", nb_real_billets);
 
     recv_dernier_n_billets(nb_real_billets);
+}
+
+void wait_until_ready(){
+    int *resp = malloc(sizeof(int));
+    if (recv(sock, resp, sizeof(int), 0) < 0){
+        perror("recv() ");
+        exit(EXIT_FAILURE);
+    }
+    if (*resp == 1) return;
+    else wait_until_ready();
 }
 
 void ajout_fichier_aux(int port, FILE *fichier){
@@ -106,14 +119,22 @@ void ajout_fichier_aux(int port, FILE *fichier){
     //lecture du fichier
     char buffer[SIZE_BLOC];
     int numBloc = 1;
-    long nb_read = 0;
-    while (!feof(fichier) && nb_read <= LEN_FILE){
-        nb_read += fread(buffer, sizeof(char), SIZE_BLOC, fichier);
+    long nb_read_total = 0;
+    long nb_read;
+
+    wait_until_ready();
+
+    while (!feof(fichier) && nb_read_total <= LEN_FILE){
+        nb_read = fread(buffer, sizeof(char), SIZE_BLOC, fichier);
+        SET_END_AT(buffer, nb_read);
         msg_fichier *msg = compose_msg_fichier(compose_entete(5, id), htons(numBloc), buffer);
         int len = sizeof(msg_fichier);
 
         char send_buffer[len];
         memcpy(send_buffer, msg, len);
+
+        printf("Envoie du paquet numero %d, de taille %zu octets au serveur\n",
+                                numBloc, strlen(buffer));
 
         //envoyer la requete au serveur
         if (sendto(sock, send_buffer, len, 0,
@@ -126,6 +147,7 @@ void ajout_fichier_aux(int port, FILE *fichier){
             send_empty_buffer(servadrfichier, 5, id, sock);
 
         numBloc++;
+        nb_read_total+=nb_read;
     }
 
 }
@@ -145,6 +167,7 @@ void ajout_fichier(uint16_t f, const char *nom, const char *path){
     memcpy(send_buffer, msg, len);
     memcpy(send_buffer+sizeof(msg_fil), nom, strlen(nom));
 
+    printf("Envoi de la requete au serveur...\n");
     //envoyer la requete au serveur
     if (sendto(sock, send_buffer, len, 0,
                 (struct sockaddr*)&servadr, sizeof(servadr)) < 0){
@@ -167,25 +190,43 @@ void ajout_fichier(uint16_t f, const char *nom, const char *path){
         return;
     }
 
+    printf("OK du serveur\n");
+
     ajout_fichier_aux(rep_srv->nb, fichier);
     
     fclose(fichier);
 }
 
-void telecharger_fichier_aux(int port, const char *nom, const char *path){
-    int sock_fichier = socket(PF_INET6, SOCK_DGRAM, 0);
-
-    struct sockaddr_in6 client_adr_fichier;
-
-    memset(&client_adr_fichier, 0, sizeof(struct sockaddr_in6));
-    client_adr_fichier.sin6_family = AF_INET6;
-    client_adr_fichier.sin6_port = port;
-    client_adr_fichier.sin6_addr = in6addr_any;
-
-    if (bind(sock_fichier, (struct sockaddr*)&client_adr_fichier, sizeof(struct sockaddr_in6)) < 0) {
-        perror("Erreur lors de la liaison de la socket");
+void is_ready_to_receve(){
+    if (sendto(sock, &id, sizeof(id), 0
+        ,(struct sockaddr*)&servadr, sizeof(servadr)) < 0){
+        perror("sendto() ");
         exit(EXIT_FAILURE);
     }
+}
+
+void telecharger_fichier_aux(int port, const char *nom, const char *path){
+    int soket_fichier = socket(PF_INET6, SOCK_DGRAM, 0);
+
+    struct sockaddr_in6 client_adr;
+
+    memset(&client_adr, 0, sizeof(struct sockaddr_in6));
+    client_adr.sin6_family = AF_INET6;
+    client_adr.sin6_port = port;
+    client_adr.sin6_addr = in6addr_any;
+
+    int reuse = 1;
+    if (setsockopt(soket_fichier, SOL_SOCKET, SO_REUSEADDR, &reuse, sizeof(reuse)) < 0) {
+        perror("Erreur lors de la configuration de l'option SO_REUSEADDR");
+        exit(EXIT_FAILURE);
+    }
+
+    if (bind(soket_fichier, (struct sockaddr *)&client_adr, sizeof(client_adr)) < 0){
+        perror("bind() ");
+        exit(EXIT_FAILURE);
+    }
+
+    is_ready_to_receve();
 
     char *full_path = malloc(sizeof(nom) + sizeof(path) + 1);
     EMPTY(full_path);
@@ -195,12 +236,21 @@ void telecharger_fichier_aux(int port, const char *nom, const char *path){
 
     FILE *fichier = fopen(full_path, "a");
 
+    if (!fichier){
+        perror("Erreur ouverture fichier ");
+        return;
+    }
+
+    int numpaquet = 1;
+
     while (1){
 
         char recv_buffer[sizeof(msg_fichier)];
         memset(recv_buffer, 0, sizeof(msg_fichier));
 
-        if (recv(sock_fichier, recv_buffer, sizeof(msg_fichier), 0) < 0){
+        //is_ready(sock_fichier, port);
+
+        if (recv(soket_fichier, recv_buffer, sizeof(msg_fichier), 0) < 0){
             perror("recv() => ajout_fichier_aux ");
             exit(EXIT_FAILURE);
         }
@@ -208,15 +258,24 @@ void telecharger_fichier_aux(int port, const char *nom, const char *path){
         msg_fichier *msg = malloc(sizeof(msg_fichier));
         memcpy(msg, recv_buffer, sizeof(msg_fichier));
 
-        fwrite(msg_fichier->data, sizeof(char)
-                        , strlen(msg_fichier->data), fichier);
+        printf("Reception du paquet numero %d, de taille %zu octets du serveur\n"
+                        , numpaquet, strlen(msg->data));
 
-        if (strlen(msg_fichier->data) < 512) break;
+        printf("Ecriture du paquet dans le fichier...\n");
+        fwrite(msg->data, sizeof(char)
+                        , strlen(msg->data), fichier);
+
+        numpaquet++;
+
+        if (strlen(msg->data) < 512) break;
 
     }
 
+    printf("Fichier telecharger avec succes a l'adresse : %s\n", full_path);
+
+    free(full_path);
     fclose(fichier);
-    close(sock_fichier);
+    close(soket_fichier);
 }
 
 //nom du fichier, et path est le chemin ou enregistrer le fichier
@@ -232,12 +291,35 @@ void telecharger_fichier(uint16_t f, const char *nom, const char *path){
     memcpy(send_buffer, msg, len);
     memcpy(send_buffer+sizeof(msg_fil), nom, strlen(nom));
 
+    printf("Envoi de la requete au serveur...\n");
     //envoyer la requete au serveur
     if (sendto(sock, send_buffer, len, 0,
                 (struct sockaddr*)&servadr, sizeof(servadr)) < 0){
         perror("sendto()");
         exit(EXIT_FAILURE);
-    }     
+    }  
+
+    char recv_buffer[sizeof(msg_srv)];
+    memset(recv_buffer, 0, sizeof(msg_srv));
+
+    if (recv(sock, recv_buffer, sizeof(msg_srv), 0) < 0){
+        perror("recv() => telecharger_fichier ");
+        exit(EXIT_FAILURE);
+    }
+
+    msg_srv *rep_srv = malloc(sizeof(msg_srv));
+    memcpy(rep_srv, recv_buffer, sizeof(msg_srv));
+
+    if (erreur(rep_srv->entete)){
+        return;
+    }
+
+    printf("OK du serveur\n");
+
+    free(rep_srv);
+
+    telecharger_fichier_aux(htons(port), nom, path);
+
 }
 
 msg_inscri * inscription(const char * pseudo){
@@ -289,4 +371,5 @@ int main(){
     printf("codeReq : %d id : %d\n", codeReq, id);
 
     ajout_fichier(0, "younes", "./server.c");
+    telecharger_fichier(0, "younes", ".");
 }
