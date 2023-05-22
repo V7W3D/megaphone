@@ -9,6 +9,8 @@
 #include "msgsrv.h"
 #include "fil.h"
 
+#define EMPTY(f) *f = '\0'
+
 #define SIZE_BLOC 512
 
 int sock;
@@ -102,11 +104,11 @@ void ajout_fichier_aux(int port, FILE *fichier){
     inet_pton(AF_INET6, "::1", &servadrfichier.sin6_addr);
 
     //lecture du fichier
-    char buffer[SIZE_BLOC+1];
+    char buffer[SIZE_BLOC];
     int numBloc = 1;
     long nb_read = 0;
     while (!feof(fichier) && nb_read <= LEN_FILE){
-        nb_read += fread(buffer, sizeof(unsigned char), SIZE_BLOC, fichier);
+        nb_read += fread(buffer, sizeof(char), SIZE_BLOC, fichier);
         msg_fichier *msg = compose_msg_fichier(compose_entete(5, id), htons(numBloc), buffer);
         int len = sizeof(msg_fichier);
 
@@ -170,13 +172,59 @@ void ajout_fichier(uint16_t f, const char *nom, const char *path){
     fclose(fichier);
 }
 
-void telecharger_fichier_aux(){
+void telecharger_fichier_aux(int port, const char *nom, const char *path){
+    int sock_fichier = socket(PF_INET6, SOCK_DGRAM, 0);
 
+    struct sockaddr_in6 client_adr_fichier;
+
+    memset(&client_adr_fichier, 0, sizeof(struct sockaddr_in6));
+    client_adr_fichier.sin6_family = AF_INET6;
+    client_adr_fichier.sin6_port = port;
+    client_adr_fichier.sin6_addr = in6addr_any;
+
+    if (bind(sock_fichier, (struct sockaddr*)&client_adr_fichier, sizeof(struct sockaddr_in6)) < 0) {
+        perror("Erreur lors de la liaison de la socket");
+        exit(EXIT_FAILURE);
+    }
+
+    char *full_path = malloc(sizeof(nom) + sizeof(path) + 1);
+    EMPTY(full_path);
+    strcat(full_path, path);
+    strcat(full_path, "/");
+    strcat(full_path, nom);
+
+    FILE *fichier = fopen(full_path, "a");
+
+    while (1){
+
+        char recv_buffer[sizeof(msg_fichier)];
+        memset(recv_buffer, 0, sizeof(msg_fichier));
+
+        if (recv(sock_fichier, recv_buffer, sizeof(msg_fichier), 0) < 0){
+            perror("recv() => ajout_fichier_aux ");
+            exit(EXIT_FAILURE);
+        }
+
+        msg_fichier *msg = malloc(sizeof(msg_fichier));
+        memcpy(msg, recv_buffer, sizeof(msg_fichier));
+
+        fwrite(msg_fichier->data, sizeof(char)
+                        , strlen(msg_fichier->data), fichier);
+
+        if (strlen(msg_fichier->data) < 512) break;
+
+    }
+
+    fclose(fichier);
+    close(sock_fichier);
 }
 
 //nom du fichier, et path est le chemin ou enregistrer le fichier
 void telecharger_fichier(uint16_t f, const char *nom, const char *path){
-    msg_fil * msg = compose_msg_fil(nom, 6, id, f, get_allocated_port(id));
+
+    int port = get_allocated_port(id);
+
+    msg_fil * msg = compose_msg_fil(nom, 6, id, f, port);
 
     int len = sizeof(msg_fil) + strlen(nom);
 

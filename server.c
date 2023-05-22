@@ -220,13 +220,15 @@ void telecharger_fichier_aux(uint16_t entete, uint16_t id, int port, int f, char
     struct sockaddr_in6 adrcli_fichier;
     memset(&adrcli_fichier, 0, sizeof(adrcli_fichier));
     adrcli_fichier.sin6_port = port;
-    adrcli_fichier.sin6_addr = in6addr_any;
+    inet_pton(AF_INET6, "::1", &adrcli_fichier.sin6_addr);
 
     data_fichier *data = fich->data;
 
     int numBloc = 0;
 
     while (data){
+
+        int len_data = strlen(data->data);
 
         msg_fichier *msg = compose_msg_fichier(entete, htons(numBloc), data->data);
 
@@ -242,7 +244,8 @@ void telecharger_fichier_aux(uint16_t entete, uint16_t id, int port, int f, char
 
         data = data->suivant;
 
-        if (!data) send_empty_buffer(adrcli_fichier, 6, id, sockfd);
+        if (!data && len_data >= 512)
+            send_empty_buffer(adrcli_fichier, 6, id, sockfd);
 
         numBloc++;
     }
