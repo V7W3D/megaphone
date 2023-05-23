@@ -100,12 +100,13 @@ int erreur(uint16_t entete){
     return 0;
 }
 
-void recv_dernier_n_billets(int nb){
+int recv_dernier_n_billets(int nb){
     while (nb){
 
         char recv_buffer[sizeof(msg_dernier_billets)];
 
         if (recv(sock, recv_buffer, sizeof(msg_dernier_billets), 0) < 0){
+            if (errno == EWOULDBLOCK) return -1;
             perror("recv() => recv_dernier_n_billets ");
             exit(EXIT_FAILURE);
         }
@@ -124,9 +125,10 @@ void recv_dernier_n_billets(int nb){
         free(msg);
         nb--;
     }
+    return 1;
 }
 
-void dernier_n_billets(uint16_t f, uint16_t nb){
+int dernier_n_billets(uint16_t f, uint16_t nb){
     msg_fil *msg = compose_msg_dernier_n_billets(f, nb);
 
     char send_buffer[sizeof(msg_fil)];
@@ -144,6 +146,7 @@ void dernier_n_billets(uint16_t f, uint16_t nb){
     memset(recv_buffer, 0, sizeof(msg_srv));
 
     if (recv(sock, recv_buffer, sizeof(msg_srv), 0) < 0){
+        if (errno == EWOULDBLOCK) return -1;
         perror("recv() => dernier_n_billets ");
         exit(EXIT_FAILURE);
     }
@@ -152,7 +155,7 @@ void dernier_n_billets(uint16_t f, uint16_t nb){
     memcpy(rep_srv, recv_buffer, sizeof(msg_srv));
 
     if (erreur(rep_srv->entete)){
-        return;
+        return -1;
     }
 
     printf("OK du serveur\n");
@@ -161,20 +164,21 @@ void dernier_n_billets(uint16_t f, uint16_t nb){
 
     printf("Nombre de billets : %d\n", nb_real_billets);
 
-    recv_dernier_n_billets(nb_real_billets);
+    return recv_dernier_n_billets(nb_real_billets);
 }
 
-void wait_until_ready(){
+int wait_until_ready(){
     int *resp = malloc(sizeof(int));
     if (recv(sock, resp, sizeof(int), 0) < 0){
+        if (errno == EWOULDBLOCK) return -1;
         perror("recv() ");
         exit(EXIT_FAILURE);
     }
-    if (*resp == 1) return;
+    if (*resp == 1) return 1;
     else wait_until_ready();
 }
 
-void ajout_fichier_aux(int port, FILE *fichier){
+int ajout_fichier_aux(int port, FILE *fichier){
 
     struct sockaddr_in6 servadrfichier;
 
@@ -189,7 +193,7 @@ void ajout_fichier_aux(int port, FILE *fichier){
     long nb_read_total = 0;
     long nb_read;
 
-    wait_until_ready();
+    if ( wait_until_ready() == -1) return -1;
 
     while (!feof(fichier) && nb_read_total <= LEN_FILE){
         nb_read = fread(buffer, sizeof(char), SIZE_BLOC, fichier);
@@ -217,9 +221,11 @@ void ajout_fichier_aux(int port, FILE *fichier){
         nb_read_total+=nb_read;
     }
 
+    return 1;
+
 }
 
-void ajout_fichier(uint16_t f, const char *nom, const char *path){
+int ajout_fichier(uint16_t f, const char *nom, const char *path){
     msg_fil * msg = compose_msg_fil(nom, 5, id, f, 0);
 
     FILE *fichier = fopen(path, "rb");
@@ -247,6 +253,7 @@ void ajout_fichier(uint16_t f, const char *nom, const char *path){
     memset(recv_buffer, 0, sizeof(msg_srv));
 
     if (recv(sock, recv_buffer, sizeof(msg_srv), 0) < 0){
+        if (errno == EWOULDBLOCK) return -1;
         perror("recv() => dernier_n_billets ");
         exit(EXIT_FAILURE);
     }
@@ -255,14 +262,14 @@ void ajout_fichier(uint16_t f, const char *nom, const char *path){
     memcpy(rep_srv, recv_buffer, sizeof(msg_srv));
 
     if (erreur(rep_srv->entete)){
-        return;
+        return -1;
     }
 
     printf("OK du serveur\n");
 
-    ajout_fichier_aux(rep_srv->nb, fichier);
-    
     fclose(fichier);
+
+    return ajout_fichier_aux(rep_srv->nb, fichier);
 }
 
 void is_ready_to_receve(){
@@ -316,8 +323,6 @@ void telecharger_fichier_aux(int port, const char *nom, const char *path){
         char recv_buffer[sizeof(msg_fichier)];
         memset(recv_buffer, 0, sizeof(msg_fichier));
 
-        //is_ready(sock_fichier, port);
-
         if (recv(soket_fichier, recv_buffer, sizeof(msg_fichier), 0) < 0){
             perror("recv() => ajout_fichier_aux ");
             exit(EXIT_FAILURE);
@@ -347,7 +352,7 @@ void telecharger_fichier_aux(int port, const char *nom, const char *path){
 }
 
 //nom du fichier, et path est le chemin ou enregistrer le fichier
-void telecharger_fichier(uint16_t f, const char *nom, const char *path){
+int telecharger_fichier(uint16_t f, const char *nom, const char *path){
 
     int port = get_allocated_port(id);
 
@@ -371,6 +376,7 @@ void telecharger_fichier(uint16_t f, const char *nom, const char *path){
     memset(recv_buffer, 0, sizeof(msg_srv));
 
     if (recv(sock, recv_buffer, sizeof(msg_srv), 0) < 0){
+        if (errno == EWOULDBLOCK) return -1;
         perror("recv() => telecharger_fichier ");
         exit(EXIT_FAILURE);
     }
@@ -379,7 +385,7 @@ void telecharger_fichier(uint16_t f, const char *nom, const char *path){
     memcpy(rep_srv, recv_buffer, sizeof(msg_srv));
 
     if (erreur(rep_srv->entete)){
-        return;
+        return -1;
     }
 
     printf("OK du serveur\n");
@@ -388,6 +394,7 @@ void telecharger_fichier(uint16_t f, const char *nom, const char *path){
 
     telecharger_fichier_aux(htons(port), nom, path);
 
+    return 1;
 }
 
 void fill_pseudo(char* pseudo) {
@@ -442,12 +449,16 @@ int main(){
     uint16_t numfil = 0;
     char pseudo[10];
     char message[256];
+    char nom[10], path[30];
 
 menu:
     while(1){
         printf("[1] Inscription\n");
         printf("[2] Poster un billet\n");
+        printf("[3] Derniers n Billets\n");
         printf("[4] Abonnement\n");
+        printf("[5] Ajout d'un fichier\n");
+        printf("[6] Telechargement d'un fichier\n");
         printf("[7] Notifications\n");
         printf("--------------------------\n");
         printf("codeReq : ");
@@ -461,7 +472,10 @@ menu:
                 mi = inscription(pseudo);
                 memcpy(inscri_buffer, mi, sizeof(msg_inscri));
                 if (sendto(sock, inscri_buffer, sizeof(msg_inscri), 0, (struct sockaddr*)&servadr, sizeof(servadr)) < 0) goto error;
-                if(read(sock, recv_buffer, sizeof(msg_srv)) < 0) exit(EXIT_FAILURE);
+                if(read(sock, recv_buffer, sizeof(msg_srv)) < 0){
+                    if (errno == EWOULDBLOCK) goto error;
+                    exit(EXIT_FAILURE);
+                }
                 memcpy(msf, inscri_buffer, sizeof(msg_srv));
                 e = *((uint16_t*)recv_buffer);
                 extract_entete(e, &codeReq, &id);
@@ -478,7 +492,10 @@ menu:
                 mf = poster_billet(id, numfil, message);
                 memcpy(send_buffer, mf, sizeof(msg_fil));
                 if (sendto(sock, send_buffer, sizeof(msg_fil), 0, (struct sockaddr*)&servadr, sizeof(servadr)) < 0) goto error;
-                if(read(sock, recv_buffer, sizeof(msg_srv)) < 0) exit(EXIT_FAILURE);
+                if(read(sock, recv_buffer, sizeof(msg_srv)) < 0){
+                    if (errno == EWOULDBLOCK) goto error;
+                    exit(EXIT_FAILURE);
+                }
                 memcpy(msf, recv_buffer, sizeof(msg_srv));
                 e = *((uint16_t*)recv_buffer);
                 extract_entete(e, &codeReq, &id);
@@ -486,6 +503,12 @@ menu:
                 else goto error;
                 break;
             case 3:
+                printf("Entrez le numéro du fil : ");
+                scanf("%hd", &numfil);
+                int nb;
+                printf("Entrez le nombre de billets : ");
+                scanf("%d", &nb);
+                if (dernier_n_billets(numfil, nb) == -1) goto error;
                 break;
             case 4:
                 printf("Entrez votre id : ");
@@ -495,7 +518,10 @@ menu:
                 mf = demande_abonnement(id, numfil);
                 memcpy(send_buffer, mf, sizeof(msg_fil));
                 if (sendto(sock, send_buffer, sizeof(msg_fil), 0, (struct sockaddr*)&servadr, sizeof(servadr)) < 0) goto error;
-                if(read(sock, recv_buffer, sizeof(msg_srv_fil)) < 0) exit(EXIT_FAILURE);
+                if(read(sock, recv_buffer, sizeof(msg_srv_fil)) < 0){
+                    if (errno == EWOULDBLOCK) goto error;
+                    exit(EXIT_FAILURE);
+                }
                 memcpy(msf, recv_buffer, sizeof(msg_srv_fil));
                 e = *((uint16_t*)recv_buffer);
                 extract_entete(e, &codeReq, &id);
@@ -506,8 +532,22 @@ menu:
                 else goto error;
                 break;
             case 5:
+                printf("Entrez le numéro du fil : ");
+                scanf("%hd", &numfil);
+                printf("Entrez le nom du fichier : ");
+                scanf("%s", nom);
+                printf("Entrez le chemin vers le fichier : ");
+                scanf("%s", path);
+                if (ajout_fichier(numfil, nom, path) == -1) goto error;
                 break;
             case 6:
+                printf("Entrez le numéro du fil : ");
+                scanf("%hd", &numfil);
+                printf("Entrez le nom du fichier a telecharger : ");
+                scanf("%s", nom);
+                printf("Entrez le chemin ou enregistrer le fichier : ");
+                scanf("%s", path);
+                if (telecharger_fichier(numfil, nom, path) == -1) goto error;
                 break;
             case 7:
                 affich_notif(notifs);
