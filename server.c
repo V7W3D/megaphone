@@ -345,15 +345,30 @@ msg_srv * erreur(){
     return ms; 
 }
 
+void recup_pseudo(char* pseudo) {
+    int length = strlen(pseudo);
+    int hashIndex = 0;
+    while (hashIndex < length && pseudo[hashIndex] != '#') {
+        hashIndex++;
+    }
+    if(hashIndex < length){
+        pseudo[hashIndex] = '\0';
+    }
+}
+
 msg_srv * inscription(const char * buffer){
     msg_inscri * mi = malloc(sizeof(msg_inscri));
     memcpy(mi, buffer, sizeof(msg_inscri));
-    register_user(mi->pseudo);
-    uint16_t entete = compose_entete(1, id_u);
-    id_u++;
-    msg_srv * ms = compose_msg_srv(entete, 0, 0);
-    free(mi);
-    return ms;
+    recup_pseudo(mi->pseudo);
+    if(strlen(mi->pseudo) > 1){
+        register_user(mi->pseudo);
+        uint16_t entete = compose_entete(1, id_u);
+        id_u++;
+        msg_srv * ms = compose_msg_srv(entete, 0, 0);
+        free(mi);
+        return ms;
+    }
+    return erreur();
 }
 
 msg_srv * poster_billet(uint16_t id, const char * buffer){

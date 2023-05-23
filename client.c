@@ -390,6 +390,14 @@ void telecharger_fichier(uint16_t f, const char *nom, const char *path){
 
 }
 
+void fill_pseudo(char* pseudo) {
+    int inputLength = strlen(pseudo);
+
+    for (int i = inputLength; i < 10; i++) {
+        pseudo[i] = '#';
+    }
+}
+
 int main(){
     
     struct timeval timeout; 
@@ -432,7 +440,7 @@ int main(){
     uint16_t id = 0;
     uint16_t e = 0;
     uint16_t numfil = 0;
-    char pseudo[11];
+    char pseudo[10];
     char message[256];
 
 menu:
@@ -449,6 +457,7 @@ menu:
             case 1:
                 printf("Entrez un pseudo: ");
                 fscanf(stdin, "%10s", pseudo);
+                fill_pseudo(pseudo);
                 mi = inscription(pseudo);
                 memcpy(inscri_buffer, mi, sizeof(msg_inscri));
                 if (sendto(sock, inscri_buffer, sizeof(msg_inscri), 0, (struct sockaddr*)&servadr, sizeof(servadr)) < 0) goto error;
@@ -462,7 +471,7 @@ menu:
             case 2:
                 printf("Entrez votre id : ");
                 scanf("%hd", &id);
-                printf("Entrez le numéro du fil sur lequel vous voulez poster (0 pour créer un nouveau fil): ");
+                printf("Entrez le numéro du fil sur lequel vous voulez poster (0 pour créer un nouveau fil) : ");
                 scanf("%hd", &numfil);
                 printf("Votre message :");
                 fscanf(stdin, "%255s", message);
